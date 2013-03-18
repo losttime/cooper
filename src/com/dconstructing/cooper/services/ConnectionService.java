@@ -1,6 +1,5 @@
 package com.dconstructing.cooper.services;
 
-import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.Map;
@@ -8,10 +7,12 @@ import java.util.Properties;
 
 import android.app.Service;
 import android.content.Intent;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
+import android.os.RemoteException;
 import android.util.Log;
 
 import com.dconstructing.cooper.MainActivity;
@@ -23,8 +24,9 @@ public class ConnectionService extends Service {
 
 	public final String TAG = getClass().getSimpleName();
 	
-	public static final int MSG_START_CONNECTION = 100;
-	public static final int MSG_SEND_COMMAND = 200;
+	public static final int MSG_CONNECTION_INITIATE = 101;
+	public static final int MSG_CONNECTION_ESTABLISHED = 102;
+	public static final int MSG_COMMAND_DISPATCH = 201;
 	
 	protected Map<String,Session> mConnections = new HashMap<String,Session>();
 	
@@ -32,13 +34,14 @@ public class ConnectionService extends Service {
 	final Messenger mMessenger = new Messenger(mHandler);
 	
 	@Override
-	public IBinder onBind(Intent arg0) {
+	public IBinder onBind(Intent intent) {
 		return mMessenger.getBinder();
 	}
 	
 	
-	public void establishConnection(String uuid) {
-		ConnectThread mConnectThread = new ConnectThread(uuid, "192.168.0.1", 22 , "username", "password");
+	public void establishConnection(String uuid, String host, int port, String username, String password, Messenger reply) {
+		ConnectThread thread = new ConnectThread(uuid, host, port, username, password, reply);
+		thread.start();
 	}
 
 	
@@ -47,8 +50,16 @@ public class ConnectionService extends Service {
 	
 	
 	
-    public synchronized void connected(String uuid, Session session) {
+    public synchronized void connected(String uuid, Session session, Messenger reply) {
+    	if (MainActivity.isDebuggable) Log.i(TAG, "Connection successful " + uuid);
     	mConnections.put(uuid, session);
+    	try {
+    		Message msg = Message.obtain(null, ConnectionService.MSG_CONNECTION_ESTABLISHED);
+    		msg.replyTo = mMessenger;
+    		reply.send(msg);
+    	} catch (RemoteException e) {
+    		
+    	}
     }
     
     public synchronized void connectionFailed(String uuid) {
@@ -69,11 +80,12 @@ public class ConnectionService extends Service {
         	ConnectionService service = mService.get();
         	
             switch (msg.what) {
-	            case MSG_START_CONNECTION:
-	            	if (MainActivity.isDebuggable) Log.i(TAG, "Start Connection Message");
-	            	service.establishConnection("UUID");
+	            case MSG_CONNECTION_INITIATE:
+	            	if (MainActivity.isDebuggable) Log.i(TAG, "Initiate Connection");
+	            	Bundle bundle = msg.getData();
+	            	service.establishConnection(bundle.getString("uuid"), bundle.getString("host"), bundle.getInt("port"), bundle.getString("username"), bundle.getString("password"), msg.replyTo);
 	                break;
-	            case MSG_SEND_COMMAND:
+	            case MSG_COMMAND_DISPATCH:
 	            	if (MainActivity.isDebuggable) Log.i(TAG, "Send Command Message");
 	                break;
 	            default:
@@ -89,16 +101,19 @@ public class ConnectionService extends Service {
     	private final int tPort;
     	private final String tUsername;
     	private final String tPassword;
+    	private Messenger tReply;
 
-        public ConnectThread(String uuid, String host, int port, String username, String password) {
+        public ConnectThread(String uuid, String host, int port, String username, String password, Messenger reply) {
         	tUuid = uuid;
             tHost = host;
             tPort = port;
             tUsername = username;
             tPassword = password;
+            tReply = reply;
         }
 
         public void run() {
+        	if (MainActivity.isDebuggable) Log.i(TAG, "Initiating Connection to " + tHost);
             // Make a connection to remote server
             Properties config = new Properties();
             config.put("StrictHostKeyChecking", "no");
@@ -112,7 +127,7 @@ public class ConnectionService extends Service {
                 session.setPassword(tPassword);
                 session.connect();
                 Log.i(TAG, "Connected");
-                connected(tUuid, session);
+                connected(tUuid, session, tReply);
             } catch (JSchException e) {
             	connectionFailed(tUuid);
 			}
