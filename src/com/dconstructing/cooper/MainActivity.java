@@ -1,6 +1,7 @@
 package com.dconstructing.cooper;
 
 import android.app.Activity;
+import android.app.FragmentTransaction;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -14,10 +15,13 @@ import android.os.Messenger;
 import android.os.RemoteException;
 import android.util.Log;
 
+import com.dconstructing.cooper.fragments.ConnectionsFragment;
+import com.dconstructing.cooper.fragments.ConnectionsFragment.OnAddConnectionOptionListener;
+import com.dconstructing.cooper.fragments.NewConnectionFragment;
 import com.dconstructing.cooper.services.ConnectionService;
 
 
-public class MainActivity extends Activity {
+public class MainActivity extends Activity implements OnAddConnectionOptionListener{
 	
 	public final String TAG = getClass().getSimpleName();
     public static boolean isDebuggable = false;
@@ -31,7 +35,6 @@ public class MainActivity extends Activity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
         MainActivity.isDebuggable = (0 != (getApplicationInfo().flags &= ApplicationInfo.FLAG_DEBUGGABLE));
         
         if (MainActivity.isDebuggable) {
@@ -40,14 +43,36 @@ public class MainActivity extends Activity {
         	Log.i(TAG, "Not Debuggable");
         }
         
+        if (savedInstanceState == null) {
+            // During initial setup, plug in the connections fragment.
+        	// TODO: Add a secondary fragment for large/wide screens for two-pane view
+            ConnectionsFragment connections = new ConnectionsFragment();
+            connections.setArguments(getIntent().getExtras());
+            getFragmentManager().beginTransaction().add(android.R.id.content, connections).commit();
+        }
+        
+        // TODO: Move the connection kickoff to a more appropriate place.
+        /*
         try {
         	getApplicationContext().bindService(new Intent(this, ConnectionService.class), mConnection, Context.BIND_AUTO_CREATE);
         } catch (SecurityException e) {
-        	Log.e(TAG, "Could not bind to service", e);
+        	if (MainActivity.isDebuggable) Log.e(TAG, "Could not bind to service", e);
         }
+        */
     }
     
-    
+	@Override
+	public void onAddConnectionSelected() {
+		// TODO: Adjust the function for a two-paned view (instead of replacing the primary fragment, replace the secondary).
+		NewConnectionFragment newConnection = new NewConnectionFragment();
+		FragmentTransaction transaction = getFragmentManager().beginTransaction();
+		transaction.replace(android.R.id.content, newConnection);
+		transaction.addToBackStack(null);
+		transaction.commit();
+	}
+
+
+	
     public void sendCommand() {
         try {
             Message reply = Message.obtain(null, ConnectionService.MSG_COMMAND_DISPATCH, this.hashCode(), 0);
