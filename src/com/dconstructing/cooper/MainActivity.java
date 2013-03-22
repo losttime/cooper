@@ -48,7 +48,7 @@ public class MainActivity extends Activity implements OnAddConnectionOptionListe
         	// TODO: Add a secondary fragment for large/wide screens for two-pane view
             ConnectionsFragment connections = new ConnectionsFragment();
             connections.setArguments(getIntent().getExtras());
-            getFragmentManager().beginTransaction().add(android.R.id.content, connections).commit();
+            getFragmentManager().beginTransaction().add(android.R.id.content, connections, "connections").commit();
         }
         
         // TODO: Move the connection kickoff to a more appropriate place.
@@ -66,7 +66,7 @@ public class MainActivity extends Activity implements OnAddConnectionOptionListe
 		// TODO: Adjust the function for a two-paned view (instead of replacing the primary fragment, replace the secondary).
 		NewConnectionFragment newConnection = new NewConnectionFragment();
 		FragmentTransaction transaction = getFragmentManager().beginTransaction();
-		transaction.replace(android.R.id.content, newConnection);
+		transaction.replace(android.R.id.content, newConnection, "addConnection");
 		transaction.addToBackStack(null);
 		transaction.commit();
 	}
