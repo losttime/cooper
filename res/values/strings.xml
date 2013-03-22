@@ -9,5 +9,9 @@
     <string name="add_connection">New Connection</string>
     <string name="save">Save</string>
     <string name="discard">Discard</string>
+    
+    <string name="address_hint">e.g. example.com</string>
+    <string name="username_hint">e.g. johndoe</string>
+    <string name="password_hint">Password will be asked for at login.</string>
 
 </resources>
