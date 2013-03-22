@@ -10,6 +10,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
 
 import com.dconstructing.cooper.MainActivity;
 import com.dconstructing.cooper.R;
@@ -19,6 +20,8 @@ public class NewConnectionFragment extends Fragment {
 	public final String TAG = getClass().getSimpleName();
 	
 	ActionMode mActionMode;
+	EditText mAddressField;
+	EditText mUsernameField;
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -29,7 +32,12 @@ public class NewConnectionFragment extends Fragment {
 	
 	@Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_new_connection, container, false);
+    	View view = inflater.inflate(R.layout.fragment_new_connection, container, false);
+    	
+    	mAddressField = (EditText) view.findViewById(R.id.connection_address_field);
+    	mUsernameField = (EditText) view.findViewById(R.id.connection_username_field);
+
+    	return view;
     }
 
 	private ActionMode.Callback mActionModeCallback = new ActionMode.Callback() {
@@ -57,10 +65,13 @@ public class NewConnectionFragment extends Fragment {
 	            case R.id.cancel_new_connection:
 	            	if (MainActivity.isDebuggable) Log.i(TAG, "Canceling save");
 	            	// TODO: In order to cancel, key information will need to be cleared before destroying.
-	                //shareCurrentItem();
+	            	mAddressField.setText("");
+	            	mUsernameField.setText("");
+	            	
 	                mode.finish(); // Action picked, so close the CAB
 	                return true;
 	            default:
+	            	if (MainActivity.isDebuggable) Log.i(TAG, "Pressed: " + Integer.toString(item.getItemId()));
 	                return false;
 	        }
 	    }
