@@ -79,8 +79,11 @@ public class NewConnectionFragment extends Fragment {
 	    // Called when the user exits the action mode
 	    @Override
 	    public void onDestroyActionMode(ActionMode mode) {
+	    	if (MainActivity.isDebuggable) Log.i(TAG, "Address to Save: " + mAddressField.getText());
+	    	if (MainActivity.isDebuggable) Log.i(TAG, "Username to Save: " + mUsernameField.getText());
 	    	if (MainActivity.isDebuggable) Log.i(TAG, "Destroying ActionMode");
 	    	// TODO: Save should take place here (or as a result of this)
+	    	
 	        mActionMode = null;
 	        getFragmentManager().popBackStack(); // to go back
 	    }

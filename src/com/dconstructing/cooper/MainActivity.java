@@ -2,32 +2,39 @@ package com.dconstructing.cooper;
 
 import android.app.Activity;
 import android.app.FragmentTransaction;
+import android.app.LoaderManager;
 import android.content.ComponentName;
-import android.content.Context;
-import android.content.Intent;
+import android.content.CursorLoader;
+import android.content.Loader;
 import android.content.ServiceConnection;
 import android.content.pm.ApplicationInfo;
+import android.database.Cursor;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
+import android.provider.BaseColumns;
 import android.util.Log;
+import android.widget.SimpleCursorAdapter;
 
+import com.dconstructing.cooper.contentproviders.ConnectionsContentProvider;
+import com.dconstructing.cooper.database.CooperOpenHelper;
 import com.dconstructing.cooper.fragments.ConnectionsFragment;
 import com.dconstructing.cooper.fragments.ConnectionsFragment.OnAddConnectionOptionListener;
 import com.dconstructing.cooper.fragments.NewConnectionFragment;
 import com.dconstructing.cooper.services.ConnectionService;
 
 
-public class MainActivity extends Activity implements OnAddConnectionOptionListener{
+public class MainActivity extends Activity implements LoaderManager.LoaderCallbacks<Cursor>, OnAddConnectionOptionListener {
 	
 	public final String TAG = getClass().getSimpleName();
     public static boolean isDebuggable = false;
     
     public final static String EXTRA_MESSAGE = "com.dconstructing.cooper.MESSAGE";
     
+    SimpleCursorAdapter mAdapter;
     Messenger mService = null;
     
     final Messenger mMessenger = new Messenger(new IncomingHandler());
@@ -44,7 +51,12 @@ public class MainActivity extends Activity implements OnAddConnectionOptionListe
         }
         
         if (savedInstanceState == null) {
-            // During initial setup, plug in the connections fragment.
+            // During initial setup
+        	
+        	// Open the database
+        	getLoaderManager().initLoader(ConnectionsContentProvider.ALL_CONNECTIONS, null, this);
+        	
+        	// plug in the connections fragment.
         	// TODO: Add a secondary fragment for large/wide screens for two-pane view
             ConnectionsFragment connections = new ConnectionsFragment();
             connections.setArguments(getIntent().getExtras());
@@ -71,7 +83,47 @@ public class MainActivity extends Activity implements OnAddConnectionOptionListe
 		transaction.commit();
 	}
 
+	@Override
+	public Loader<Cursor> onCreateLoader(int loaderId, Bundle bundle) {
+		switch(loaderId) {
+			case ConnectionsContentProvider.ALL_CONNECTIONS:
+				String[] projection = {BaseColumns._ID,
+						CooperOpenHelper.USERNAME_FIELD_NAME,
+						CooperOpenHelper.HOST_FIELD_NAME};
+				String selection = null;
+				String[] args = null;
+				String sort = null;
+				return new CursorLoader(this, ConnectionsContentProvider.CONTENT_URI, projection, selection, args, sort);
+			default:
+				return null;
+		}
+	}
 
+	@Override
+	public void onLoadFinished(Loader<Cursor> loader, Cursor cursor) {
+		if (MainActivity.isDebuggable) Log.i(TAG, "Finished Loading Loader");
+		// TODO: Different action, depending on ID of loader.
+		sendToList(cursor);
+	}
+
+	@Override
+	public void onLoaderReset(Loader<Cursor> arg0) {
+		if (MainActivity.isDebuggable) Log.i(TAG, "Loader being reset");
+		mAdapter.swapCursor(null);
+	}
+
+	
+	
+
+
+	
+	
+	
+	
+	
+	public void sendToList(Cursor cursor) {
+		// Send cursor to Connections Fragment to populate list.
+	}
 	
     public void sendCommand() {
         try {

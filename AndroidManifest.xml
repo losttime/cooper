@@ -25,6 +25,10 @@
             </intent-filter>
         </activity>
         
+        <provider android:name=".contentproviders.ConnectionsContentProvider"
+            android:authorities="com.dconstructing.cooper.contentproviders"
+            android:exported="false" />
+        
         <service android:name=".services.ConnectionService" />
     </application>
 

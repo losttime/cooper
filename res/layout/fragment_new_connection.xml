@@ -10,12 +10,13 @@
 
     <EditText
         android:id="@+id/connection_address_field"
-        android:layout_alignParentTop="true"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
         android:autoLink="none"
         android:enabled="true"
         android:hint="@string/address_hint"
+        android:inputType="textNoSuggestions"
         android:lines="1"
         android:linksClickable="false"
         android:singleLine="true"
@@ -24,12 +25,13 @@
 
     <EditText
         android:id="@+id/connection_username_field"
-        android:layout_below="@id/connection_address_field"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_below="@id/connection_address_field"
         android:autoLink="none"
         android:enabled="true"
         android:hint="@string/username_hint"
+        android:inputType="textNoSuggestions"
         android:lines="1"
         android:linksClickable="false"
         android:singleLine="true"
@@ -37,10 +39,10 @@
         android:textColorHint="#666" />
 
     <TextView
-        android:layout_below="@id/connection_username_field"
-        android:layout_centerHorizontal="true"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_below="@id/connection_username_field"
+        android:layout_centerHorizontal="true"
         android:text="@string/password_hint" />
-    
+
 </RelativeLayout>
