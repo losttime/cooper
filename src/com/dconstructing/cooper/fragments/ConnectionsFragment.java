@@ -120,7 +120,7 @@ public class ConnectionsFragment extends ListFragment implements LoaderManager.L
 				String selection = null;
 				String[] args = null;
 				String sort = null;
-				return new CursorLoader(this.getActivity(), ConnectionsContentProvider.CONTENT_URI, projection, selection, args, sort);
+				return new CursorLoader(getActivity(), ConnectionsContentProvider.CONTENT_URI, projection, selection, args, sort);
 			default:
 				return null;
 		}

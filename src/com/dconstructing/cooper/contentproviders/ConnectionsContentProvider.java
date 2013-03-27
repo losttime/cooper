@@ -5,14 +5,18 @@ import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.UriMatcher;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
+import android.database.SQLException;
 import android.database.sqlite.SQLiteQueryBuilder;
 import android.net.Uri;
+import android.util.Log;
 
+import com.dconstructing.cooper.MainActivity;
 import com.dconstructing.cooper.database.CooperOpenHelper;
 
 public class ConnectionsContentProvider extends ContentProvider {
 
+	public final String TAG = getClass().getSimpleName();
+	
 	public static final int ALL_CONNECTIONS = 1;
 	
 	private static final int CONNECTIONS = 10;
@@ -51,8 +55,29 @@ public class ConnectionsContentProvider extends ContentProvider {
 
 	@Override
 	public Uri insert(Uri uri, ContentValues values) {
-		// TODO Auto-generated method stub
-		return null;
+		if (MainActivity.isDebuggable) Log.i(TAG, "Insert URI: " + uri.toString());
+	    long rowId = 0;
+	    
+	    int uriType = sURIMatcher.match(uri);
+	    switch (uriType) {
+	    	case CONNECTIONS:
+	    		rowId = mOpenHelper.getWritableDatabase().insert(CooperOpenHelper.CONNECTIONS_TABLE_NAME, null, values);
+	    		if (MainActivity.isDebuggable) Log.i(TAG, "New Row: " + Long.toString(rowId));
+	    		break;
+	    	default:
+	    		throw new IllegalArgumentException("Unknown URI");
+	    }
+	    
+	    if (rowId > 0) {
+	    	if (MainActivity.isDebuggable) Log.i(TAG, "Notifying of update");
+		    getContext().getContentResolver().notifyChange(uri, null);
+
+		    Uri newUri = uri.buildUpon().appendPath(String.valueOf(rowId)).build();
+	    	getContext().getContentResolver().notifyChange(newUri, null);
+	    	return newUri;
+	    }
+
+	    throw new SQLException("Failed to insert row into " + uri);
 	}
 
 	@Override
@@ -63,13 +88,16 @@ public class ConnectionsContentProvider extends ContentProvider {
 
 	@Override
 	public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) {
+		if (MainActivity.isDebuggable) Log.i(TAG, "Query URI: " + uri.toString());
+		
 		int uriType = sURIMatcher.match(uri);
 		switch (uriType) {
 			case CONNECTIONS:
-				SQLiteDatabase db = mOpenHelper.getReadableDatabase();
 				SQLiteQueryBuilder queryBuilder = new SQLiteQueryBuilder();
 				queryBuilder.setTables(CooperOpenHelper.CONNECTIONS_TABLE_NAME);
-				return queryBuilder.query(db, projection, selection, selectionArgs, null, null, sortOrder);
+				Cursor cursor = queryBuilder.query(mOpenHelper.getReadableDatabase(), projection, selection, selectionArgs, null, null, sortOrder);
+				cursor.setNotificationUri(getContext().getContentResolver(), uri); // to get this to update when the URI is notified of change (in updates/inserts)
+				return cursor;
 			default:
 				return null;
 		}
@@ -77,8 +105,22 @@ public class ConnectionsContentProvider extends ContentProvider {
 
 	@Override
 	public int update(Uri uri, ContentValues values, String selection, String[] selectionArgs) {
-		// TODO Auto-generated method stub
-		return 0;
+		int numOfRows = 0;
+	    
+	    int uriType = sURIMatcher.match(uri);
+	    switch (uriType) {
+	    	case CONNECTIONS:
+	    		numOfRows = mOpenHelper.getWritableDatabase().update(CooperOpenHelper.CONNECTIONS_TABLE_NAME, values, selection, selectionArgs);
+	    		break;
+	    	default:
+	    		throw new IllegalArgumentException("Unknown URI: " + uri.toString());
+	    }
+
+	    if (numOfRows > 0) {
+	    	getContext().getContentResolver().notifyChange(uri, null);
+	    }
+	    
+	    return numOfRows;
 	}
 
 }

@@ -1,6 +1,8 @@
 package com.dconstructing.cooper.fragments;
 
 import android.app.Fragment;
+import android.content.ContentValues;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.ActionMode;
@@ -14,6 +16,8 @@ import android.widget.EditText;
 
 import com.dconstructing.cooper.MainActivity;
 import com.dconstructing.cooper.R;
+import com.dconstructing.cooper.contentproviders.ConnectionsContentProvider;
+import com.dconstructing.cooper.database.CooperOpenHelper;
 
 public class NewConnectionFragment extends Fragment {
 
@@ -40,6 +44,30 @@ public class NewConnectionFragment extends Fragment {
     	return view;
     }
 
+	
+	
+	
+	private void saveConnection() {
+		if (!mAddressField.getText().toString().equals("") && !mUsernameField.getText().toString().equals("")) {
+			ContentValues contentValues = new ContentValues();
+			contentValues.put(CooperOpenHelper.HOST_FIELD_NAME, mAddressField.getText().toString()); // string
+			contentValues.put(CooperOpenHelper.USERNAME_FIELD_NAME, mUsernameField.getText().toString()); // string
+				
+			boolean idSet = false;
+			if (idSet) {
+				String selection = null;
+				String[] selectionArgs = null;
+				
+				int rowsUpdated = getActivity().getContentResolver().update(ConnectionsContentProvider.CONTENT_URI, contentValues, selection, selectionArgs);
+			} else {
+				Uri newUri = getActivity().getContentResolver().insert(ConnectionsContentProvider.CONTENT_URI, contentValues);
+			}
+		}
+	}
+	
+	
+	
+	
 	private ActionMode.Callback mActionModeCallback = new ActionMode.Callback() {
 
 	    // Called when the action mode is created; startActionMode() was called
@@ -82,9 +110,8 @@ public class NewConnectionFragment extends Fragment {
 	    	if (MainActivity.isDebuggable) Log.i(TAG, "Address to Save: " + mAddressField.getText());
 	    	if (MainActivity.isDebuggable) Log.i(TAG, "Username to Save: " + mUsernameField.getText());
 	    	if (MainActivity.isDebuggable) Log.i(TAG, "Destroying ActionMode");
-	    	// TODO: Save should take place here (or as a result of this)
-	    	
 	        mActionMode = null;
+	    	saveConnection();
 	        getFragmentManager().popBackStack(); // to go back
 	    }
 	};	

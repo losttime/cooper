@@ -22,7 +22,7 @@ public class CooperOpenHelper extends SQLiteOpenHelper {
 	
 	private static final String CONNECTIONS_TABLE_CREATE =
             "CREATE TABLE " + CONNECTIONS_TABLE_NAME + " (" +
-            BaseColumns._ID + " INT, " +
+            BaseColumns._ID + " INTEGER PRIMARY KEY, " +
             USERNAME_FIELD_NAME + " TEXT, " +
             HOST_FIELD_NAME + " TEXT);";
 	
