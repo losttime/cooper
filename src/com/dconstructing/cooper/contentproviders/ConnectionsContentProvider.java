@@ -6,6 +6,7 @@ import android.content.ContentValues;
 import android.content.UriMatcher;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteQueryBuilder;
 import android.net.Uri;
 
 import com.dconstructing.cooper.database.CooperOpenHelper;
@@ -31,7 +32,6 @@ public class ConnectionsContentProvider extends ContentProvider {
 	}
 	
 	protected CooperOpenHelper mOpenHelper;
-	private SQLiteDatabase db;
 	
 	public ConnectionsContentProvider() {
 		// TODO Auto-generated constructor stub
@@ -63,8 +63,16 @@ public class ConnectionsContentProvider extends ContentProvider {
 
 	@Override
 	public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) {
-		// TODO Auto-generated method stub
-		return null;
+		int uriType = sURIMatcher.match(uri);
+		switch (uriType) {
+			case CONNECTIONS:
+				SQLiteDatabase db = mOpenHelper.getReadableDatabase();
+				SQLiteQueryBuilder queryBuilder = new SQLiteQueryBuilder();
+				queryBuilder.setTables(CooperOpenHelper.CONNECTIONS_TABLE_NAME);
+				return queryBuilder.query(db, projection, selection, selectionArgs, null, null, sortOrder);
+			default:
+				return null;
+		}
 	}
 
 	@Override
