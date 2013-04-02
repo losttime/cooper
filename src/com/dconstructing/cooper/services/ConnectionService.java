@@ -35,6 +35,7 @@ public class ConnectionService extends Service {
 	
 	@Override
 	public IBinder onBind(Intent intent) {
+		if (MainActivity.isDebuggable) Log.i(TAG, "Returning the binder");
 		return mMessenger.getBinder();
 	}
 	

@@ -3,6 +3,7 @@ package com.dconstructing.cooper.fragments;
 import android.app.Activity;
 import android.app.ListFragment;
 import android.app.LoaderManager;
+import android.content.ContentResolver;
 import android.content.CursorLoader;
 import android.content.Loader;
 import android.database.Cursor;
@@ -17,6 +18,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 
 import com.dconstructing.cooper.MainActivity;
@@ -99,6 +101,18 @@ public class ConnectionsFragment extends ListFragment implements LoaderManager.L
 	}
 	
 	@Override
+	public void onListItemClick(ListView list, View view, int position, long id) {
+		if (MainActivity.isDebuggable) Log.i(TAG, "Position: " + position + " ID: " + id);
+		super.onListItemClick(list, view, position, id);
+		
+		Cursor cursor = (Cursor) list.getItemAtPosition(position);
+		String host = cursor.getString(cursor.getColumnIndex(CooperOpenHelper.HOST_FIELD_NAME));
+		String username = cursor.getString(cursor.getColumnIndex(CooperOpenHelper.USERNAME_FIELD_NAME));
+		
+		mAddConnectionCallback.connectToServer(host, username);
+	}
+	
+	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
 			case R.id.add_connection:
@@ -164,5 +178,6 @@ public class ConnectionsFragment extends ListFragment implements LoaderManager.L
 	
 	public interface OnAddConnectionOptionListener {
         public void onAddConnectionSelected();
+        public void connectToServer(String host, String username);
     }
 }
