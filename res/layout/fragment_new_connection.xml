@@ -43,6 +43,6 @@
         android:layout_height="wrap_content"
         android:layout_below="@id/connection_username_field"
         android:layout_centerHorizontal="true"
-        android:text="@string/password_hint" />
+        android:text="@string/password_desc" />
 
 </RelativeLayout>

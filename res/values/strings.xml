@@ -12,6 +12,10 @@
     
     <string name="address_hint">e.g. example.com</string>
     <string name="username_hint">e.g. johndoe</string>
-    <string name="password_hint">Password will be asked for at login.</string>
+    <string name="password_hint">password</string>
+    <string name="password_desc">Password will be asked for at login.</string>
+    
+    <string name="login_button">Login</string>
+    <string name="cancel_button">Cancel</string>
 
 </resources>

@@ -1,10 +1,10 @@
 package com.dconstructing.cooper;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 
 import android.app.Activity;
+import android.app.FragmentManager;
 import android.app.FragmentTransaction;
 import android.content.ComponentName;
 import android.content.Context;
@@ -23,11 +23,13 @@ import android.util.Log;
 import com.dconstructing.cooper.fragments.ConnectionsFragment;
 import com.dconstructing.cooper.fragments.ConnectionsFragment.OnAddConnectionOptionListener;
 import com.dconstructing.cooper.fragments.NewConnectionFragment;
+import com.dconstructing.cooper.fragments.PasswordDialogFragment;
+import com.dconstructing.cooper.fragments.PasswordDialogFragment.PasswordDialogListener;
 import com.dconstructing.cooper.objects.Connection;
 import com.dconstructing.cooper.services.ConnectionService;
 
 
-public class MainActivity extends Activity implements OnAddConnectionOptionListener {
+public class MainActivity extends Activity implements OnAddConnectionOptionListener, PasswordDialogListener {
 	
 	public final String TAG = getClass().getSimpleName();
     public static boolean isDebuggable = false;
@@ -94,10 +96,14 @@ public class MainActivity extends Activity implements OnAddConnectionOptionListe
 	        	if (MainActivity.isDebuggable) Log.e(TAG, "Could not bind to service", e);
 	        }
 		} else {
-			this.initiateConnection(host, username);
+			promptForPassword(host, username);
 		}
 	}
 
+	@Override
+	public void onPasswordEntered(String host, String username, String password) {
+		this.initiateConnection(host, username, password);
+	}
 
 	
 	
@@ -140,7 +146,13 @@ public class MainActivity extends Activity implements OnAddConnectionOptionListe
     	}
     }
     
-    public void initiateConnection(String host, String username) {
+    public void promptForPassword(String host, String username) {
+    	FragmentManager fm = getFragmentManager();
+    	PasswordDialogFragment passwordDialog = PasswordDialogFragment.create(host, username);
+    	passwordDialog.show(fm, "fragment_password");
+    }
+    
+    public void initiateConnection(String host, String username, String password) {
     	if (MainActivity.isDebuggable) Log.i(TAG, "Attempting the connection with " + host + " and " + username);
         try {
         	Bundle bundle = new Bundle();
@@ -148,7 +160,7 @@ public class MainActivity extends Activity implements OnAddConnectionOptionListe
         	bundle.putString("host",host);
         	bundle.putInt("port",22);
         	bundle.putString("username",username);
-        	bundle.putString("password","abc123");
+        	bundle.putString("password",password);
             Message msg = Message.obtain(null, ConnectionService.MSG_CONNECTION_INITIATE);
             msg.setData(bundle);
             msg.replyTo = mMessenger;

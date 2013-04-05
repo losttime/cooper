@@ -3,7 +3,6 @@ package com.dconstructing.cooper.fragments;
 import android.app.Activity;
 import android.app.ListFragment;
 import android.app.LoaderManager;
-import android.content.ContentResolver;
 import android.content.CursorLoader;
 import android.content.Loader;
 import android.database.Cursor;
