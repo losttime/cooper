@@ -23,6 +23,7 @@ public class PasswordDialogFragment extends DialogFragment implements OnEditorAc
 
 	public final String TAG = getClass().getSimpleName();
 	
+	private long mId;
 	private String mHost;
 	private String mUsername;
 	private EditText mEditText;
@@ -30,10 +31,11 @@ public class PasswordDialogFragment extends DialogFragment implements OnEditorAc
 	public PasswordDialogFragment() {
 	}
 	
-	public static PasswordDialogFragment create(String host, String username) {
+	public static PasswordDialogFragment create(long id, String host, String username) {
 		PasswordDialogFragment fragment = new PasswordDialogFragment();
 		
     	Bundle bundle = new Bundle();
+    	bundle.putLong("uuid", id);
     	bundle.putString("host", host);
     	bundle.putString("username", username);
     	fragment.setArguments(bundle);
@@ -46,6 +48,7 @@ public class PasswordDialogFragment extends DialogFragment implements OnEditorAc
 		super.onCreate(savedInstanceState);
 		
 		Bundle args = getArguments();
+		mId = args.getLong("uuid");
 		mHost = args.getString("host");
 		mUsername = args.getString("username");
 	}
@@ -116,7 +119,7 @@ public class PasswordDialogFragment extends DialogFragment implements OnEditorAc
 	
 	public void passwordSubmitted() {
 		if (MainActivity.isDebuggable) Log.i(TAG, "Password submitted, but we're not logging it ;)");
-		((PasswordDialogListener)getActivity()).onPasswordEntered(mHost, mUsername, mEditText.getText().toString());
+		((PasswordDialogListener)getActivity()).onPasswordEntered(mId, mHost, mUsername, mEditText.getText().toString());
 		this.dismiss();
 	}
 	
@@ -126,6 +129,6 @@ public class PasswordDialogFragment extends DialogFragment implements OnEditorAc
 	
 	
 	public interface PasswordDialogListener {
-        void onPasswordEntered(String host, String username, String password);
+        void onPasswordEntered(long id, String host, String username, String password);
     }	
 }

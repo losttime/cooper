@@ -20,6 +20,9 @@ import android.os.Messenger;
 import android.os.RemoteException;
 import android.util.Log;
 
+import com.dconstructing.cooper.fragments.ConnectedDirectoryFragment;
+import com.dconstructing.cooper.fragments.ConnectedFragment;
+import com.dconstructing.cooper.fragments.ConnectedFragment.ConnectedFragmentListener;
 import com.dconstructing.cooper.fragments.ConnectionsFragment;
 import com.dconstructing.cooper.fragments.ConnectionsFragment.OnAddConnectionOptionListener;
 import com.dconstructing.cooper.fragments.NewConnectionFragment;
@@ -29,7 +32,7 @@ import com.dconstructing.cooper.objects.Connection;
 import com.dconstructing.cooper.services.ConnectionService;
 
 
-public class MainActivity extends Activity implements OnAddConnectionOptionListener, PasswordDialogListener {
+public class MainActivity extends Activity implements OnAddConnectionOptionListener, PasswordDialogListener, ConnectedFragmentListener {
 	
 	public final String TAG = getClass().getSimpleName();
     public static boolean isDebuggable = false;
@@ -62,14 +65,6 @@ public class MainActivity extends Activity implements OnAddConnectionOptionListe
             getFragmentManager().beginTransaction().add(android.R.id.content, connections, "connections").commit();
         }
         
-        // TODO: Move the connection kickoff to a more appropriate place.
-        /*
-        try {
-        	getApplicationContext().bindService(new Intent(this, ConnectionService.class), mConnection, Context.BIND_AUTO_CREATE);
-        } catch (SecurityException e) {
-        	if (MainActivity.isDebuggable) Log.e(TAG, "Could not bind to service", e);
-        }
-        */
     }
     
 	@Override
@@ -83,11 +78,11 @@ public class MainActivity extends Activity implements OnAddConnectionOptionListe
 	}
 	
 	@Override
-	public void connectToServer(String host, String username) {
+	public void connectToServer(long id, String host, String username) {
 		if (MainActivity.isDebuggable) Log.i(TAG, "Connecting to host " + host + " with username " + username);
 		
 		if (mService == null) {
-			this.queueConnection(host, username);
+			this.queueConnection(id, host, username);
 			
 			if (MainActivity.isDebuggable) Log.i(TAG, "Gotta start the Connection Service");
 	        try {
@@ -96,13 +91,18 @@ public class MainActivity extends Activity implements OnAddConnectionOptionListe
 	        	if (MainActivity.isDebuggable) Log.e(TAG, "Could not bind to service", e);
 	        }
 		} else {
-			promptForPassword(host, username);
+			promptForPassword(id, host, username);
 		}
 	}
 
 	@Override
-	public void onPasswordEntered(String host, String username, String password) {
-		this.initiateConnection(host, username, password);
+	public void onPasswordEntered(long id, String host, String username, String password) {
+		this.initiateConnection(id, host, username, password);
+	}
+
+	@Override
+	public void onFragmentLoaded(String tag) {
+		loadDirectoryContent(Long.parseLong(tag));
 	}
 
 	
@@ -127,9 +127,10 @@ public class MainActivity extends Activity implements OnAddConnectionOptionListe
         }
     }
     
-    public void queueConnection(String host, String username) {
+    public void queueConnection(long id, String host, String username) {
     	if (MainActivity.isDebuggable) Log.i(TAG, "Queuing host " + host + " with username " + username);
     	Connection connection = new Connection();
+    	connection.id = id;
     	connection.host = host;
     	connection.username = username;
     	mConnectionQueue.add(connection);
@@ -141,22 +142,22 @@ public class MainActivity extends Activity implements OnAddConnectionOptionListe
     	Iterator<Connection> it = mConnectionQueue.iterator();
     	while (it.hasNext()) {
     		Connection connection = (Connection) it.next();
-    		connectToServer(connection.host, connection.username);
+    		connectToServer(connection.id, connection.host, connection.username);
     		it.remove();
     	}
     }
     
-    public void promptForPassword(String host, String username) {
+    public void promptForPassword(long id, String host, String username) {
     	FragmentManager fm = getFragmentManager();
-    	PasswordDialogFragment passwordDialog = PasswordDialogFragment.create(host, username);
+    	PasswordDialogFragment passwordDialog = PasswordDialogFragment.create(id, host, username);
     	passwordDialog.show(fm, "fragment_password");
     }
     
-    public void initiateConnection(String host, String username, String password) {
+    public void initiateConnection(long id, String host, String username, String password) {
     	if (MainActivity.isDebuggable) Log.i(TAG, "Attempting the connection with " + host + " and " + username);
         try {
         	Bundle bundle = new Bundle();
-        	bundle.putString("uuid","123456789");
+        	bundle.putLong("uuid",id);
         	bundle.putString("host",host);
         	bundle.putInt("port",22);
         	bundle.putString("username",username);
@@ -172,7 +173,44 @@ public class MainActivity extends Activity implements OnAddConnectionOptionListe
             // so there is no need to do anything here.
         }
     }
+    
+    public void connectionEstablished(long id) {
+    	if (MainActivity.isDebuggable) Log.i(TAG, "Creating a new fragment for this connection with tag (" + Long.toString(id) + ")");
+		ConnectedDirectoryFragment newDirectory = new ConnectedDirectoryFragment();
+		FragmentTransaction transaction = getFragmentManager().beginTransaction();
+		transaction.replace(android.R.id.content, newDirectory, Long.toString(id));
+		transaction.addToBackStack(null);
+		transaction.commit();
+    }
 
+    public void loadDirectoryContent(long uuid) {
+    	if (MainActivity.isDebuggable) Log.i(TAG, "Loading Directory content");
+    	Bundle bundle = new Bundle();
+    	bundle.putLong("uuid", uuid);
+    	bundle.putString("command", "ls");
+        Message msg = Message.obtain(null, ConnectionService.MSG_COMMAND_DISPATCH);
+        msg.setData(bundle);
+        msg.replyTo = mMessenger;
+		try {
+			mService.send(msg);
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
+    }
+    
+    public void sendResponseToFragment(long uuid, String response) {
+    	if (MainActivity.isDebuggable) Log.i(TAG, "Looking for fragment with tag: " + Long.toString(uuid));
+    	FragmentManager fm = getFragmentManager();
+    	ConnectedFragment fragment = (ConnectedFragment)fm.findFragmentByTag(Long.toString(uuid));
+    	if (fragment == null) {
+    		if (MainActivity.isDebuggable) Log.i(TAG, "Fragment is null");
+    	} else {
+    		fragment.processResponse(response);
+    	}
+    }
+    
+    
+    
     
     
     
@@ -183,7 +221,13 @@ public class MainActivity extends Activity implements OnAddConnectionOptionListe
                 case ConnectionService.MSG_CONNECTION_ESTABLISHED:
                     // Do something become the connection was complete
                 	if (MainActivity.isDebuggable) Log.i(TAG, "Service connection to server - confirmed");
+                	Bundle bundle = msg.getData();
+                	connectionEstablished(bundle.getLong("uuid"));
                     break;
+                case ConnectionService.MSG_COMMAND_RETURN:
+                	Bundle cmdBundle = msg.getData();
+                	if (MainActivity.isDebuggable) Log.i(TAG, "Command returned response: " + cmdBundle.getString("response"));
+                	sendResponseToFragment(cmdBundle.getLong("uuid"), cmdBundle.getString("response"));
                 default:
                     super.handleMessage(msg);
             }
@@ -202,28 +246,6 @@ public class MainActivity extends Activity implements OnAddConnectionOptionListe
             mService = new Messenger(service);
 
            	initiateQueuedConnections();
-            
-            // We want to monitor the service for as long as we are
-            // connected to it.
-            /*
-            try {
-            	Bundle bundle = new Bundle();
-            	bundle.putString("uuid","123456789");
-            	bundle.putString("host","example.com");
-            	bundle.putInt("port",22);
-            	bundle.putString("username","developer");
-            	bundle.putString("password","abc123");
-                Message msg = Message.obtain(null, ConnectionService.MSG_CONNECTION_INITIATE);
-                msg.setData(bundle);
-                msg.replyTo = mMessenger;
-                mService.send(msg);
-            } catch (RemoteException e) {
-                // In this case the service has crashed before we could even
-                // do anything with it; we can count on soon being
-                // disconnected (and then reconnected if it can be restarted)
-                // so there is no need to do anything here.
-            }
-            */
         }
 
         public void onServiceDisconnected(ComponentName className) {
