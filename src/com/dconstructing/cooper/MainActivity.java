@@ -11,7 +11,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.ApplicationInfo;
-import android.database.Cursor;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -21,6 +20,7 @@ import android.os.RemoteException;
 import android.util.Log;
 
 import com.dconstructing.cooper.fragments.ConnectedDirectoryFragment;
+import com.dconstructing.cooper.fragments.ConnectedDirectoryFragment.DirectoryListener;
 import com.dconstructing.cooper.fragments.ConnectedFragment;
 import com.dconstructing.cooper.fragments.ConnectedFragment.ConnectedFragmentListener;
 import com.dconstructing.cooper.fragments.ConnectionsFragment;
@@ -28,11 +28,11 @@ import com.dconstructing.cooper.fragments.ConnectionsFragment.OnAddConnectionOpt
 import com.dconstructing.cooper.fragments.NewConnectionFragment;
 import com.dconstructing.cooper.fragments.PasswordDialogFragment;
 import com.dconstructing.cooper.fragments.PasswordDialogFragment.PasswordDialogListener;
-import com.dconstructing.cooper.objects.Connection;
+import com.dconstructing.cooper.objects.Address;
 import com.dconstructing.cooper.services.ConnectionService;
 
 
-public class MainActivity extends Activity implements OnAddConnectionOptionListener, PasswordDialogListener, ConnectedFragmentListener {
+public class MainActivity extends Activity implements OnAddConnectionOptionListener, PasswordDialogListener, ConnectedFragmentListener, DirectoryListener {
 	
 	public final String TAG = getClass().getSimpleName();
     public static boolean isDebuggable = false;
@@ -40,7 +40,7 @@ public class MainActivity extends Activity implements OnAddConnectionOptionListe
     public final static String EXTRA_MESSAGE = "com.dconstructing.cooper.MESSAGE";
     
     Messenger mService = null;
-    ArrayList<Connection> mConnectionQueue = new ArrayList<Connection>();
+    ArrayList<Address> mConnectionQueue = new ArrayList<Address>();
     
     final Messenger mMessenger = new Messenger(new IncomingHandler());
     
@@ -100,11 +100,17 @@ public class MainActivity extends Activity implements OnAddConnectionOptionListe
 		this.initiateConnection(id, host, username, password);
 	}
 
+	//@Override
+	//public void onFragmentLoaded(String tag) {
+	//	loadDirectoryContent(Long.parseLong(tag));
+	//}
+
 	@Override
-	public void onFragmentLoaded(String tag) {
-		loadDirectoryContent(Long.parseLong(tag));
+	public void onDirectoryItemSelected(String tag, String itemName) {
+		openSelectedItem(Long.parseLong(tag), itemName);
 	}
 
+
 	
 	
 
@@ -114,10 +120,11 @@ public class MainActivity extends Activity implements OnAddConnectionOptionListe
 	
 	
 	
+	/*
 	public void sendToList(Cursor cursor) {
 		// Send cursor to Connections Fragment to populate list.
 	}
-	
+
     public void sendCommand() {
         try {
             Message reply = Message.obtain(null, ConnectionService.MSG_COMMAND_DISPATCH, this.hashCode(), 0);
@@ -126,10 +133,11 @@ public class MainActivity extends Activity implements OnAddConnectionOptionListe
         	
         }
     }
+    */
     
     public void queueConnection(long id, String host, String username) {
     	if (MainActivity.isDebuggable) Log.i(TAG, "Queuing host " + host + " with username " + username);
-    	Connection connection = new Connection();
+    	Address connection = new Address();
     	connection.id = id;
     	connection.host = host;
     	connection.username = username;
@@ -139,9 +147,9 @@ public class MainActivity extends Activity implements OnAddConnectionOptionListe
     public void initiateQueuedConnections() {
     	if (MainActivity.isDebuggable) Log.i(TAG, "Working through the queue");
     	
-    	Iterator<Connection> it = mConnectionQueue.iterator();
+    	Iterator<Address> it = mConnectionQueue.iterator();
     	while (it.hasNext()) {
-    		Connection connection = (Connection) it.next();
+    		Address connection = (Address) it.next();
     		connectToServer(connection.id, connection.host, connection.username);
     		it.remove();
     	}
@@ -176,11 +184,11 @@ public class MainActivity extends Activity implements OnAddConnectionOptionListe
     
     public void connectionEstablished(long id) {
     	if (MainActivity.isDebuggable) Log.i(TAG, "Creating a new fragment for this connection with tag (" + Long.toString(id) + ")");
-		ConnectedDirectoryFragment newDirectory = new ConnectedDirectoryFragment();
-		FragmentTransaction transaction = getFragmentManager().beginTransaction();
-		transaction.replace(android.R.id.content, newDirectory, Long.toString(id));
-		transaction.addToBackStack(null);
-		transaction.commit();
+		//ConnectedDirectoryFragment newDirectory = new ConnectedDirectoryFragment();
+		//FragmentTransaction transaction = getFragmentManager().beginTransaction();
+		//transaction.replace(android.R.id.content, newDirectory, Long.toString(id));
+		//transaction.addToBackStack(null);
+		//transaction.commit();
     }
 
     public void loadDirectoryContent(long uuid) {
@@ -198,12 +206,47 @@ public class MainActivity extends Activity implements OnAddConnectionOptionListe
 		}
     }
     
-    public void sendResponseToFragment(long uuid, String response) {
+    public void openSelectedItem(Long uuid, String itemName) {
+    	if (MainActivity.isDebuggable) Log.i(TAG, "Loading Directory content");
+    	Bundle bundle = new Bundle();
+    	bundle.putLong("uuid", uuid);
+    	bundle.putString("command", "ls");
+    	bundle.putString("pathChange", itemName);
+        Message msg = Message.obtain(null, ConnectionService.MSG_COMMAND_DISPATCH);
+        msg.setData(bundle);
+        msg.replyTo = mMessenger;
+		try {
+			mService.send(msg);
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}    	
+    }
+    
+    public void handleResponse(long uuid, String command, String response) {
+    	if (command.equals("ls")) {
+    		// display directory fragment
+    		sendResponseToDirectoryFragment(uuid, response);
+    	} else if (command.equals("vi")) {
+    		// display file fragment
+    		//sendResponseToFileFragment(uuid, response);
+    	}
+    }
+    
+    public void sendResponseToDirectoryFragment(long uuid, String response) {
     	if (MainActivity.isDebuggable) Log.i(TAG, "Looking for fragment with tag: " + Long.toString(uuid));
     	FragmentManager fm = getFragmentManager();
     	ConnectedFragment fragment = (ConnectedFragment)fm.findFragmentByTag(Long.toString(uuid));
     	if (fragment == null) {
     		if (MainActivity.isDebuggable) Log.i(TAG, "Fragment is null");
+    		// create fragment with response
+    		Bundle bundle = new Bundle();
+    		bundle.putString("response", response);
+    		ConnectedDirectoryFragment newDirectory = new ConnectedDirectoryFragment();
+    		newDirectory.setArguments(bundle);
+    		FragmentTransaction transaction = fm.beginTransaction();
+    		transaction.replace(android.R.id.content, newDirectory, Long.toString(uuid));
+    		transaction.addToBackStack(null);
+    		transaction.commit();
     	} else {
     		fragment.processResponse(response);
     	}
@@ -227,7 +270,8 @@ public class MainActivity extends Activity implements OnAddConnectionOptionListe
                 case ConnectionService.MSG_COMMAND_RETURN:
                 	Bundle cmdBundle = msg.getData();
                 	if (MainActivity.isDebuggable) Log.i(TAG, "Command returned response: " + cmdBundle.getString("response"));
-                	sendResponseToFragment(cmdBundle.getLong("uuid"), cmdBundle.getString("response"));
+                	handleResponse(cmdBundle.getLong("uuid"), cmdBundle.getString("command"), cmdBundle.getString("response"));
+                	//sendResponseToFragment(cmdBundle.getLong("uuid"), cmdBundle.getString("response"));
                 default:
                     super.handleMessage(msg);
             }

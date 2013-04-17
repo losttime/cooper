@@ -18,6 +18,7 @@ import android.os.RemoteException;
 import android.util.Log;
 
 import com.dconstructing.cooper.MainActivity;
+import com.dconstructing.cooper.objects.Connection;
 import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
@@ -32,7 +33,7 @@ public class ConnectionService extends Service {
 	public static final int MSG_COMMAND_DISPATCH = 201;
 	public static final int MSG_COMMAND_RETURN = 202;
 	
-	protected Map<Long,Session> mConnections = new HashMap<Long,Session>();
+	protected Map<Long,Connection> mConnections = new HashMap<Long,Connection>();
 	
 	protected final Handler mHandler = new IncomingHandler(this);
 	final Messenger mMessenger = new Messenger(mHandler);
@@ -49,13 +50,33 @@ public class ConnectionService extends Service {
 		thread.start();
 	}
 	
-	public void sendCommand(Long uuid, String command, Messenger reply) {
-		Session session = mConnections.get(uuid);
-		CommandThread thread = new CommandThread(uuid, session, command, reply);
+	public void sendCommand(Long uuid, String command, String pathChange, Messenger reply) {
+		Connection connection = mConnections.get(uuid);
+		if (pathChange != null) {
+			connection.updatePath(pathChange);
+		}
+		CommandThread thread = new CommandThread(uuid, connection.session, command, connection.path, reply);
 		thread.start();
 	}
 
-	
+    public void sendResponse(long uuid, String command, String response, Messenger reply) {
+    	try {
+    		Bundle bundle = new Bundle();
+        	bundle.putLong("uuid", uuid);
+        	bundle.putString("command", command);
+        	bundle.putString("response", response);
+    		Message msg = Message.obtain(null, ConnectionService.MSG_COMMAND_RETURN);
+    		msg.setData(bundle);
+    		msg.replyTo = mMessenger;
+    		reply.send(msg);
+    	} catch (RemoteException e) {
+    		
+    	}
+    }
+
+    
+    
+    
 	
 	
 	
@@ -63,7 +84,10 @@ public class ConnectionService extends Service {
 	
     public synchronized void connected(Long uuid, Session session, Messenger reply) {
     	if (MainActivity.isDebuggable) Log.i(TAG, "Connection successful " + uuid);
-    	mConnections.put(uuid, session);
+    	Connection connection = new Connection();
+    	connection.session = session;
+    	mConnections.put(uuid, connection);
+    	
     	try {
     		Bundle bundle = new Bundle();
         	bundle.putLong("uuid",uuid);
@@ -74,26 +98,35 @@ public class ConnectionService extends Service {
     	} catch (RemoteException e) {
     		
     	}
+    	
+    	sendCommand(uuid, "pwd", null, reply);
     }
     
     public synchronized void connectionFailed(Long uuid) {
     	if (MainActivity.isDebuggable) Log.e(TAG, "connection failed " + Long.toString(uuid));
     }
     
-    public synchronized void commandResponse(long uuid, String response, Messenger reply) {
-    	//if (MainActivity.isDebuggable) Log.i(TAG, "Command Response: " + response);
-    	try {
-    		Bundle bundle = new Bundle();
-        	bundle.putLong("uuid", uuid);
-        	bundle.putString("response", response);
-    		Message msg = Message.obtain(null, ConnectionService.MSG_COMMAND_RETURN);
-    		msg.setData(bundle);
-    		msg.replyTo = mMessenger;
-    		reply.send(msg);
-    	} catch (RemoteException e) {
-    		
+    public synchronized void commandResponse(long uuid, String command, String path, String response, Messenger reply) {
+    	if (command.indexOf("ls") == 0) {
+    		if (response.equals(path)) {
+    			// It's actually a file. Open it
+    			sendCommand(uuid, "vi", path, reply);
+    		} else {
+    			// It's the contents of a directory. Send them to the user
+    			sendResponse(uuid, command, response, reply);
+    		}
+    	} else if (command.indexOf("pwd") == 0) {
+    		// Response is the connection path. Set it.
+    		Connection connection = mConnections.get(uuid);
+    		connection.path = response.replaceAll("\n", "");
+    		mConnections.put(uuid, connection);
+    		sendCommand(uuid, "ls", null, reply);
+    	} else if (command.indexOf("vi") == 0) {
+    		// Opening the file, just send the response to the user
+    		sendResponse(uuid, command, response, reply);
     	}
     }
+    
     
     
     
@@ -121,7 +154,7 @@ public class ConnectionService extends Service {
 	            case MSG_COMMAND_DISPATCH:
 	            	if (MainActivity.isDebuggable) Log.i(TAG, "Send Command Message");
 	            	Bundle cmdBundle = msg.getData();
-	            	service.sendCommand(cmdBundle.getLong("uuid"), cmdBundle.getString("command"), msg.replyTo);
+	            	service.sendCommand(cmdBundle.getLong("uuid"), cmdBundle.getString("command"), cmdBundle.getString("pathChange"), msg.replyTo);
 	                break;
 	            default:
 	                super.handleMessage(msg);
@@ -135,22 +168,24 @@ public class ConnectionService extends Service {
     	private final long tUuid;
     	private final Session tSession;
     	private final String tCommand;
+    	private final String tPath;
     	private Messenger tReply;
 
-        public CommandThread(long uuid, Session session, String command, Messenger reply) {
+        public CommandThread(long uuid, Session session, String command, String path, Messenger reply) {
         	tUuid = uuid;
         	tSession = session;
             tCommand = command;
+            tPath = path;
             tReply = reply;
         }
 
         public void run() {
-        	if (MainActivity.isDebuggable) Log.i(TAG, "Sending command: " + tCommand);
+        	if (MainActivity.isDebuggable) Log.i(TAG, "Sending command: " + tCommand + " " + tPath);
         	
         	try {
         		// An exec channel seems to give the response I want
         		ChannelExec channel = (ChannelExec)tSession.openChannel("exec");
-            	channel.setCommand(tCommand.getBytes());
+            	channel.setCommand((tCommand + " " + tPath).getBytes());
             	//Channel channel = tSession.openChannel("shell");
             	
 				InputStream inputStream = channel.getInputStream();
@@ -181,7 +216,7 @@ public class ConnectionService extends Service {
 					}
 					catch(Exception ee){}
 				}
-				commandResponse(tUuid, response, tReply);
+				commandResponse(tUuid, tCommand, tPath, response, tReply);
 				channel.disconnect();
 			} catch (IOException e) {
 				e.printStackTrace();

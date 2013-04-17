@@ -4,12 +4,8 @@ import android.app.Activity;
 import android.app.ListFragment;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
 
 import com.dconstructing.cooper.MainActivity;
-import com.dconstructing.cooper.R;
 
 public class ConnectedFragment extends ListFragment {
 
@@ -30,7 +26,8 @@ public class ConnectedFragment extends ListFragment {
 			throw new ClassCastException(activity.toString() + " must implement OnFragmentListener");
 		}
 	}
-	
+
+	/*
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -40,12 +37,8 @@ public class ConnectedFragment extends ListFragment {
 		mFragmentCallback.onFragmentLoaded(getTag());
 		//setHasOptionsMenu(true); // Let the Activity know that this Fragment has menu options to add.
 	}
+	*/
 	
-	@Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-		if (MainActivity.isDebuggable) Log.i(TAG, "onCreateView");
-        return inflater.inflate(R.layout.fragment_directory, container, false);
-    }
 	
 	
 	
@@ -62,6 +55,6 @@ public class ConnectedFragment extends ListFragment {
 	
 	
 	public interface ConnectedFragmentListener {
-        public void onFragmentLoaded(String tag);
+        //public void onFragmentLoaded(String tag);
     }
 }
