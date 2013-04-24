@@ -19,7 +19,8 @@ public class ConnectedDirectoryFragment extends ConnectedFragment {
 	public final String TAG = getClass().getSimpleName();
 	
 	DirectoryListener mDirectoryCallback;
-	String mLs;
+	ArrayList<String> mFiles;
+	ArrayList<String> mDirectories;
 	
 	@Override
 	public void onAttach(Activity activity) {
@@ -39,7 +40,8 @@ public class ConnectedDirectoryFragment extends ConnectedFragment {
 		super.onCreate(savedInstanceState);
 		Bundle arguments = getArguments();
 		if (arguments != null) {
-			mLs = arguments.getString("response");
+			mFiles = arguments.getStringArrayList("files");
+			mDirectories = arguments.getStringArrayList("directories");
 		}
 	}
 
@@ -55,10 +57,14 @@ public class ConnectedDirectoryFragment extends ConnectedFragment {
 		
 		if (savedInstanceState == null) {
 			ArrayList<String> list = new ArrayList<String>();
-			if (mLs != null) {
-				String[] lines = mLs.split(System.getProperty("line.separator"));
-				for(String line : lines) {
-					list.add(line);
+			if (mDirectories != null) {
+				for(String directory : mDirectories) {
+					list.add(directory);
+				}
+			}
+			if (mFiles != null) {
+				for(String file : mFiles) {
+					list.add(file);
 				}
 			}
 			ArrayAdapter<String> adapter = new ArrayAdapter<String>(this.getActivity(),
@@ -86,18 +92,23 @@ public class ConnectedDirectoryFragment extends ConnectedFragment {
 	
 	
 	
-	public void processResponse(String response) {
-		if (MainActivity.isDebuggable) Log.i(TAG, "Response: " + response);
+	public void processResponse(ArrayList<String> files, ArrayList<String> directories) {
 		ArrayAdapter<String> adapter = (ArrayAdapter<String>)getListAdapter();
 		adapter.setNotifyOnChange(false);
 		adapter.clear();
 		
-		String[] lines = response.split(System.getProperty("line.separator"));
-		adapter.add("..");
-		for(String line : lines) {
-			adapter.add(line);
+		//String[] lines = response.split(System.getProperty("line.separator"));
+		//adapter.add("..");
+		//for(String line : lines) {
+		//	adapter.add(line);
+		//}
+		for (String directory : directories) {
+			adapter.add(directory);
 		}
-		
+		for (String file : files) {
+			adapter.add(file);
+		}
+
 		adapter.notifyDataSetChanged();
 	}
 	

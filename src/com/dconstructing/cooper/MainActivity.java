@@ -21,7 +21,6 @@ import android.util.Log;
 
 import com.dconstructing.cooper.fragments.ConnectedDirectoryFragment;
 import com.dconstructing.cooper.fragments.ConnectedDirectoryFragment.DirectoryListener;
-import com.dconstructing.cooper.fragments.ConnectedFragment;
 import com.dconstructing.cooper.fragments.ConnectedFragment.ConnectedFragmentListener;
 import com.dconstructing.cooper.fragments.ConnectionsFragment;
 import com.dconstructing.cooper.fragments.ConnectionsFragment.OnAddConnectionOptionListener;
@@ -222,25 +221,25 @@ public class MainActivity extends Activity implements OnAddConnectionOptionListe
 		}    	
     }
     
-    public void handleResponse(long uuid, String command, String response) {
-    	if (command.equals("ls")) {
-    		// display directory fragment
-    		sendResponseToDirectoryFragment(uuid, response);
-    	} else if (command.equals("vi")) {
-    		// display file fragment
-    		//sendResponseToFileFragment(uuid, response);
-    	}
+    public void handleResponse(long uuid, ArrayList<String> files, ArrayList<String> directories) {
+    	sendResponseToDirectoryFragment(uuid, files, directories);
     }
     
-    public void sendResponseToDirectoryFragment(long uuid, String response) {
+    public void handleResponse(long uuid, String command, String response) {
+   		// display file fragment
+   		//sendResponseToFileFragment(uuid, response);
+    }
+    
+    public void sendResponseToDirectoryFragment(long uuid, ArrayList<String> files, ArrayList<String> directories) {
     	if (MainActivity.isDebuggable) Log.i(TAG, "Looking for fragment with tag: " + Long.toString(uuid));
     	FragmentManager fm = getFragmentManager();
-    	ConnectedFragment fragment = (ConnectedFragment)fm.findFragmentByTag(Long.toString(uuid));
+    	ConnectedDirectoryFragment fragment = (ConnectedDirectoryFragment)fm.findFragmentByTag(Long.toString(uuid));
     	if (fragment == null) {
     		if (MainActivity.isDebuggable) Log.i(TAG, "Fragment is null");
     		// create fragment with response
     		Bundle bundle = new Bundle();
-    		bundle.putString("response", response);
+    		bundle.putStringArrayList("files", files);
+    		bundle.putStringArrayList("directories", directories);
     		ConnectedDirectoryFragment newDirectory = new ConnectedDirectoryFragment();
     		newDirectory.setArguments(bundle);
     		FragmentTransaction transaction = fm.beginTransaction();
@@ -248,7 +247,7 @@ public class MainActivity extends Activity implements OnAddConnectionOptionListe
     		transaction.addToBackStack(null);
     		transaction.commit();
     	} else {
-    		fragment.processResponse(response);
+    		fragment.processResponse(files, directories);
     	}
     }
     
@@ -269,9 +268,14 @@ public class MainActivity extends Activity implements OnAddConnectionOptionListe
                     break;
                 case ConnectionService.MSG_COMMAND_RETURN:
                 	Bundle cmdBundle = msg.getData();
-                	if (MainActivity.isDebuggable) Log.i(TAG, "Command returned response: " + cmdBundle.getString("response"));
-                	handleResponse(cmdBundle.getLong("uuid"), cmdBundle.getString("command"), cmdBundle.getString("response"));
-                	//sendResponseToFragment(cmdBundle.getLong("uuid"), cmdBundle.getString("response"));
+                	String response = cmdBundle.getString("response");
+                	if (response == null) {
+                		ArrayList<String> files = cmdBundle.getStringArrayList("files");
+                		ArrayList<String> directories = cmdBundle.getStringArrayList("directories");
+                		handleResponse(cmdBundle.getLong("uuid"), files, directories);
+                	} else {
+                		handleResponse(cmdBundle.getLong("uuid"), cmdBundle.getString("command"), response);
+                	}
                 default:
                     super.handleMessage(msg);
             }
