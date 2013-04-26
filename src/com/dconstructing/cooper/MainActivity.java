@@ -28,6 +28,7 @@ import com.dconstructing.cooper.fragments.NewConnectionFragment;
 import com.dconstructing.cooper.fragments.PasswordDialogFragment;
 import com.dconstructing.cooper.fragments.PasswordDialogFragment.PasswordDialogListener;
 import com.dconstructing.cooper.objects.Address;
+import com.dconstructing.cooper.objects.FilePath;
 import com.dconstructing.cooper.services.ConnectionService;
 
 
@@ -99,14 +100,13 @@ public class MainActivity extends Activity implements OnAddConnectionOptionListe
 		this.initiateConnection(id, host, username, password);
 	}
 
-	//@Override
-	//public void onFragmentLoaded(String tag) {
-	//	loadDirectoryContent(Long.parseLong(tag));
-	//}
-
 	@Override
-	public void onDirectoryItemSelected(String tag, String itemName) {
-		openSelectedItem(Long.parseLong(tag), itemName);
+	public void onDirectoryItemSelected(String tag, FilePath filePath) {
+		if (filePath.isDirectory) {
+			loadDirectoryContent(Long.parseLong(tag), filePath.name);			
+		} else {
+			openSelectedItem(Long.parseLong(tag), filePath.name);
+		}
 	}
 
 
@@ -190,11 +190,12 @@ public class MainActivity extends Activity implements OnAddConnectionOptionListe
 		//transaction.commit();
     }
 
-    public void loadDirectoryContent(long uuid) {
+    public void loadDirectoryContent(long uuid, String itemName) {
     	if (MainActivity.isDebuggable) Log.i(TAG, "Loading Directory content");
     	Bundle bundle = new Bundle();
     	bundle.putLong("uuid", uuid);
     	bundle.putString("command", "ls");
+    	bundle.putString("pathChange", itemName);
         Message msg = Message.obtain(null, ConnectionService.MSG_COMMAND_DISPATCH);
         msg.setData(bundle);
         msg.replyTo = mMessenger;
@@ -205,11 +206,11 @@ public class MainActivity extends Activity implements OnAddConnectionOptionListe
 		}
     }
     
-    public void openSelectedItem(Long uuid, String itemName) {
+    public void openSelectedItem(long uuid, String itemName) {
     	if (MainActivity.isDebuggable) Log.i(TAG, "Loading Directory content");
     	Bundle bundle = new Bundle();
     	bundle.putLong("uuid", uuid);
-    	bundle.putString("command", "ls");
+    	bundle.putString("command", "vi");
     	bundle.putString("pathChange", itemName);
         Message msg = Message.obtain(null, ConnectionService.MSG_COMMAND_DISPATCH);
         msg.setData(bundle);

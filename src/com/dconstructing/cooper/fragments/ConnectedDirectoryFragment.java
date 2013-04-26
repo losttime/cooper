@@ -13,6 +13,7 @@ import android.widget.ListView;
 
 import com.dconstructing.cooper.MainActivity;
 import com.dconstructing.cooper.R;
+import com.dconstructing.cooper.objects.FilePath;
 
 public class ConnectedDirectoryFragment extends ConnectedFragment {
 
@@ -56,18 +57,18 @@ public class ConnectedDirectoryFragment extends ConnectedFragment {
 		super.onActivityCreated(savedInstanceState);
 		
 		if (savedInstanceState == null) {
-			ArrayList<String> list = new ArrayList<String>();
+			ArrayList<FilePath> list = new ArrayList<FilePath>();
 			if (mDirectories != null) {
 				for(String directory : mDirectories) {
-					list.add(directory);
+					list.add(new FilePath(directory, true));
 				}
 			}
 			if (mFiles != null) {
 				for(String file : mFiles) {
-					list.add(file);
+					list.add(new FilePath(file, false));
 				}
 			}
-			ArrayAdapter<String> adapter = new ArrayAdapter<String>(this.getActivity(),
+			ArrayAdapter<FilePath> adapter = new ArrayAdapter<FilePath>(this.getActivity(),
 	                android.R.layout.simple_list_item_1,
 	                list);
 			setListAdapter(adapter);
@@ -79,7 +80,7 @@ public class ConnectedDirectoryFragment extends ConnectedFragment {
 		if (MainActivity.isDebuggable) Log.i(TAG, "Position: " + position + " ID: " + id);
 		super.onListItemClick(list, view, position, id);
 		
-		final String item = (String) list.getItemAtPosition(position);
+		final FilePath item = (FilePath) list.getItemAtPosition(position);
 		if (MainActivity.isDebuggable) Log.i(TAG, "String: " + item);
 		
 		mDirectoryCallback.onDirectoryItemSelected(getTag(), item);
@@ -93,7 +94,7 @@ public class ConnectedDirectoryFragment extends ConnectedFragment {
 	
 	
 	public void processResponse(ArrayList<String> files, ArrayList<String> directories) {
-		ArrayAdapter<String> adapter = (ArrayAdapter<String>)getListAdapter();
+		ArrayAdapter<FilePath> adapter = (ArrayAdapter<FilePath>)getListAdapter();
 		adapter.setNotifyOnChange(false);
 		adapter.clear();
 		
@@ -103,10 +104,10 @@ public class ConnectedDirectoryFragment extends ConnectedFragment {
 		//	adapter.add(line);
 		//}
 		for (String directory : directories) {
-			adapter.add(directory);
+			adapter.add(new FilePath(directory, true));
 		}
 		for (String file : files) {
-			adapter.add(file);
+			adapter.add(new FilePath(file, false));
 		}
 
 		adapter.notifyDataSetChanged();
@@ -119,7 +120,7 @@ public class ConnectedDirectoryFragment extends ConnectedFragment {
 	
 	
 	public interface DirectoryListener {
-        public void onDirectoryItemSelected(String tag, String itemName);
+        public void onDirectoryItemSelected(String tag, FilePath filePath);
     }
 
 }
