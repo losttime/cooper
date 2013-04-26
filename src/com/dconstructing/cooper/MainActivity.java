@@ -228,6 +228,9 @@ public class MainActivity extends Activity implements OnAddConnectionOptionListe
     
     public void handleResponse(long uuid, String command, String response) {
    		// display file fragment
+    	if (MainActivity.isDebuggable) Log.i(TAG, "Displaying file: " + response);
+    	if (MainActivity.isDebuggable) Log.i(TAG, "Looking for fragment with tag: " + Long.toString(uuid));
+    	// TODO: Actually display file contents on file fragment
    		//sendResponseToFileFragment(uuid, response);
     }
     

@@ -1,7 +1,9 @@
 package com.dconstructing.cooper.services;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -116,6 +118,7 @@ public class ConnectionService extends Service {
     }
     
     public synchronized void commandResponse(long uuid, String command, String path, Object response, Messenger reply) {
+    	if (MainActivity.isDebuggable) Log.i(TAG, "Got response from command");
     	if (command.indexOf("ls") == 0) {
     		if (response instanceof Vector) {
     			HashMap<String, ArrayList<String>> contents = new HashMap<String, ArrayList<String>>();
@@ -210,11 +213,7 @@ public class ConnectionService extends Service {
             	//Channel channel = tSession.openChannel("shell");
         		// An SFTP channel seems to give the response I want
             	ChannelSftp channel = (ChannelSftp)tSession.openChannel("sftp");
-            	
-				//InputStream inputStream = channel.getInputStream();
-				//OutputStream outputStream = channel.getOutputStream();
-				
-				channel.connect();
+            	channel.connect();
 				
 				try {
 					Object response = null;
@@ -226,37 +225,23 @@ public class ConnectionService extends Service {
 						response = pwd;
 					} else if (tCommand.equals("vi")) {
 						InputStream inputStream = channel.get(tPath);
-						
-						// Read the response from the remote server
-						byte[] tmp = new byte[1024];
-						String fileContent = "";
-						while(true) {
-							while(inputStream.available() > 0) {
-								int i = inputStream.read(tmp, 0, 1024);
-								if(i < 0) break;
-								fileContent += new String(tmp, 0, i);
-							}
-							if(channel.isClosed()) {
-								if (MainActivity.isDebuggable) Log.i(TAG, "exit-status: " + channel.getExitStatus());
-								break;
-							}
-							try{
-								Thread.sleep(1000);
-							}
-							catch(Exception ee){}
-						}
-						response = fileContent;
+						BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
+
+						StringBuilder stringBuilder = new StringBuilder();
+					    String line = null;
+
+					    while ((line = bufferedReader.readLine()) != null) {
+					        stringBuilder.append(line + "\n");
+					    }
+
+					    inputStream.close();
+						response = stringBuilder.toString();
 					}
 					commandResponse(tUuid, tCommand, tPath, response, tReply);
 				} catch (SftpException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-				
-				// Send the command to the remote server
-				//outputStream.write((tCommand+"\n").getBytes());
-				//outputStream.flush();
-				
+								
 				channel.disconnect();
 			} catch (IOException e) {
 				e.printStackTrace();
