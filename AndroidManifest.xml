@@ -24,11 +24,19 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        
-        <provider android:name=".contentproviders.ConnectionsContentProvider"
+        <activity
+            android:name="com.dconstructing.cooper.ConnectionActivity"
+            android:parentActivityName="com.dconstructing.cooper.MainActivity" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.dconstructing.cooper.MainActivity" />
+        </activity>
+
+        <provider
+            android:name=".contentproviders.ConnectionsContentProvider"
             android:authorities="com.dconstructing.cooper.contentproviders"
             android:exported="false" />
-        
+
         <service android:name=".services.ConnectionService" />
     </application>
 

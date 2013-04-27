@@ -108,7 +108,7 @@ public class ConnectionsFragment extends ListFragment implements LoaderManager.L
 		String host = cursor.getString(cursor.getColumnIndex(CooperOpenHelper.HOST_FIELD_NAME));
 		String username = cursor.getString(cursor.getColumnIndex(CooperOpenHelper.USERNAME_FIELD_NAME));
 		
-		mAddConnectionCallback.connectToServer(id, host, username);
+		mAddConnectionCallback.connectToServer(id, host, username, true);
 	}
 	
 	@Override
@@ -177,6 +177,6 @@ public class ConnectionsFragment extends ListFragment implements LoaderManager.L
 	
 	public interface OnAddConnectionOptionListener {
         public void onAddConnectionSelected();
-        public void connectToServer(long id, String host, String username);
+        public void connectToServer(long id, String host, String username, boolean recycle);
     }
 }

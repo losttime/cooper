@@ -35,6 +35,8 @@ public class ConnectionService extends Service {
 	
 	public static final int MSG_CONNECTION_INITIATE = 101;
 	public static final int MSG_CONNECTION_ESTABLISHED = 102;
+	public static final int MSG_CONNECTION_CHECK = 103;
+	public static final int MSG_CONNECTION_CHECKED = 104;
 	public static final int MSG_COMMAND_DISPATCH = 201;
 	public static final int MSG_COMMAND_RETURN = 202;
 	
@@ -83,6 +85,16 @@ public class ConnectionService extends Service {
     	} catch (RemoteException e) {
     		
     	}
+    }
+    
+    public boolean checkForConnection(long uuid) {
+    	if (MainActivity.isDebuggable) Log.i(TAG, "Checking connection boolean");
+    	boolean hasConnection = false;
+    	Connection connection = mConnections.get(uuid);
+    	if (connection != null) {
+    		hasConnection = true;
+    	}
+    	return hasConnection;
     }
 
     
@@ -180,6 +192,19 @@ public class ConnectionService extends Service {
 	            	Bundle cmdBundle = msg.getData();
 	            	service.sendCommand(cmdBundle.getLong("uuid"), cmdBundle.getString("command"), cmdBundle.getString("pathChange"), msg.replyTo);
 	                break;
+	            case MSG_CONNECTION_CHECK:
+	            	if (MainActivity.isDebuggable) Log.i(TAG, "Checking for existing connection");
+	            	Bundle checkBundle = msg.getData();
+	            	try {
+	            		checkBundle.putBoolean("hasConnection", service.checkForConnection(checkBundle.getLong("uuid")));
+	                	Message outgoingMsg = Message.obtain(null, ConnectionService.MSG_CONNECTION_CHECKED);
+	                	outgoingMsg.setData(checkBundle);
+	                	outgoingMsg.replyTo = mMessenger;
+	            		msg.replyTo.send(outgoingMsg);
+	            	} catch (RemoteException e) {
+	            		
+	            	}
+	            	break;
 	            default:
 	                super.handleMessage(msg);
             }

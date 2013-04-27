@@ -2,7 +2,6 @@ package com.dconstructing.cooper.fragments;
 
 import android.app.Activity;
 import android.app.ListFragment;
-import android.os.Bundle;
 import android.util.Log;
 
 import com.dconstructing.cooper.MainActivity;
@@ -18,13 +17,15 @@ public class ConnectedFragment extends ListFragment {
 		super.onAttach(activity);
 		if (MainActivity.isDebuggable) Log.i(TAG, "onAttach");
 
-		// Check to ensure the calling Activity implements OnAddConnectionOptionListener
+		// Check to ensure the calling Activity implements ConnectedFragmentListener
 		// and is therefore ready to handle callbacks.
+		/*
 		try {
 			mFragmentCallback = (ConnectedFragmentListener) activity;
 		} catch (ClassCastException e) {
-			throw new ClassCastException(activity.toString() + " must implement OnFragmentListener");
+			throw new ClassCastException(activity.toString() + " must implement ConnectedFragmentListener");
 		}
+		*/
 	}
 
 	/*
