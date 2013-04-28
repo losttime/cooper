@@ -30,7 +30,7 @@ public class ConnectionActivity extends Activity implements DirectoryListener {
 	public final String TAG = getClass().getSimpleName();
 	
 	Messenger mService = null;
-	ArrayList<HashMap<String, Object>> mOpenQueue = new ArrayList<HashMap<String, Object>>();
+	ArrayList<Long> mConnectionQueue = new ArrayList<Long>();
 	
 	final Messenger mMessenger = new Messenger(new IncomingHandler());
 	
@@ -47,14 +47,8 @@ public class ConnectionActivity extends Activity implements DirectoryListener {
             // During initial setup
         	Intent intent = getIntent();
         	long uuid = intent.getLongExtra("uuid", 0);
-        	ArrayList<String> files = intent.getStringArrayListExtra("files");
-        	ArrayList<String> directories = intent.getStringArrayListExtra("directories");
-        	if (files != null || directories != null) {
-        		sendResponseToDirectoryFragment(uuid, files, directories);
-        	} else {
-        		// pull up fragment for uuid connection
-        		bringToFront(uuid);
-        	}
+        	showConnection(uuid);
+       		//bringToFront(uuid);
         }
 	    
 	}
@@ -62,7 +56,7 @@ public class ConnectionActivity extends Activity implements DirectoryListener {
 	@Override
 	public void onDirectoryItemSelected(String tag, FilePath filePath) {
 		if (mService == null) {
-			this.queueRead(tag, filePath);
+			//this.queueRead(tag, filePath);
 			
 			if (MainActivity.isDebuggable) Log.i(TAG, "Gotta start the Connection Service");
 	        try {
@@ -87,14 +81,8 @@ public class ConnectionActivity extends Activity implements DirectoryListener {
 	
 	
 	
-    public void queueRead(String tag, FilePath filePath) {
-    	if (MainActivity.isDebuggable) Log.i(TAG, "Queuing tag " + tag);
-    	HashMap<String, Object> read = new HashMap<String,Object>();
-    	read.put("tag", tag);
-    	read.put("filePath", filePath);
-    	mOpenQueue.add(read);
-    }
     
+    /*
     public void initiateQueuedConnections() {
     	if (MainActivity.isDebuggable) Log.i(TAG, "Working through the queue");
     	
@@ -105,28 +93,40 @@ public class ConnectionActivity extends Activity implements DirectoryListener {
     		it.remove();
     	}
     }
-	
-    public void sendResponseToDirectoryFragment(long uuid, ArrayList<String> files, ArrayList<String> directories) {
-    	if (MainActivity.isDebuggable) Log.i(TAG, "Looking for fragment with tag: " + Long.toString(uuid));
-    	FragmentManager fm = getFragmentManager();
-    	ConnectedDirectoryFragment fragment = (ConnectedDirectoryFragment)fm.findFragmentByTag(Long.toString(uuid));
-    	if (fragment == null) {
-    		if (MainActivity.isDebuggable) Log.i(TAG, "Fragment is null");
-    		// create fragment with response
-    		Bundle bundle = new Bundle();
-    		bundle.putStringArrayList("files", files);
-    		bundle.putStringArrayList("directories", directories);
-    		ConnectedDirectoryFragment newDirectory = new ConnectedDirectoryFragment();
-    		newDirectory.setArguments(bundle);
-    		FragmentTransaction transaction = fm.beginTransaction();
-    		transaction.replace(android.R.id.content, newDirectory, Long.toString(uuid));
-    		transaction.addToBackStack(null);
-    		transaction.commit();
+	*/
+    
+    public void showConnection(long uuid) {
+    	if (mService == null) {
+			this.queueConnection(uuid);
+			
+			if (MainActivity.isDebuggable) Log.i(TAG, "Gotta start the Connection Service");
+	        try {
+	        	getApplicationContext().bindService(new Intent(this, ConnectionService.class), mConnection, Context.BIND_AUTO_CREATE);
+	        } catch (SecurityException e) {
+	        	if (MainActivity.isDebuggable) Log.e(TAG, "Could not bind to service", e);
+	        }
     	} else {
-    		fragment.processResponse(files, directories);
+    		loadDirectoryContent(uuid, null);
     	}
     }
     
+    public void queueConnection(long uuid) {
+    	if (MainActivity.isDebuggable) Log.i(TAG, "Queuing connection " + Long.toString(uuid));
+    	mConnectionQueue.add(uuid);
+    }
+
+    public void showQueuedConnections() {
+    	if (MainActivity.isDebuggable) Log.i(TAG, "Working through the queue");
+    	
+    	Iterator<Long> it = mConnectionQueue.iterator();
+    	while (it.hasNext()) {
+    		long uuid = (Long) it.next();
+    		showConnection(uuid);
+    		it.remove();
+    	}
+    }
+    
+    /*
     public void bringToFront(long uuid) {
     	if (MainActivity.isDebuggable) Log.i(TAG, "Looking for fragment with tag: " + Long.toString(uuid));
     	FragmentManager fm = getFragmentManager();
@@ -138,6 +138,7 @@ public class ConnectionActivity extends Activity implements DirectoryListener {
     	}
     	
     }
+    */
 
     public void loadDirectoryContent(long uuid, String itemName) {
     	if (MainActivity.isDebuggable) Log.i(TAG, "Loading Directory content");
@@ -172,13 +173,7 @@ public class ConnectionActivity extends Activity implements DirectoryListener {
     }
  
     public void handleResponse(long uuid, ArrayList<String> files, ArrayList<String> directories) {
-    	// Should open a new Activity
-    	Intent intent = new Intent(this, ConnectionActivity.class);
-    	intent.putExtra("uuid", uuid);
-    	intent.putStringArrayListExtra("files", files);
-    	intent.putStringArrayListExtra("directories", directories);
-    	startActivity(intent);
-    	//sendResponseToDirectoryFragment(uuid, files, directories);
+    	sendResponseToDirectoryFragment(uuid, files, directories);
     }
     
     public void handleResponse(long uuid, String command, String response) {
@@ -189,6 +184,29 @@ public class ConnectionActivity extends Activity implements DirectoryListener {
    		//sendResponseToFileFragment(uuid, response);
     }
 
+    public void sendResponseToDirectoryFragment(long uuid, ArrayList<String> files, ArrayList<String> directories) {
+    	if (MainActivity.isDebuggable) Log.i(TAG, "Looking for fragment with tag: " + Long.toString(uuid));
+    	FragmentManager fm = getFragmentManager();
+    	ConnectedDirectoryFragment fragment = (ConnectedDirectoryFragment)fm.findFragmentByTag(Long.toString(uuid));
+    	if (fragment == null) {
+    		if (MainActivity.isDebuggable) Log.i(TAG, "Fragment is null");
+    		// create fragment with response
+    		Bundle bundle = new Bundle();
+    		bundle.putStringArrayList("files", files);
+    		bundle.putStringArrayList("directories", directories);
+    		ConnectedDirectoryFragment newDirectory = new ConnectedDirectoryFragment();
+    		newDirectory.setArguments(bundle);
+    		FragmentTransaction transaction = fm.beginTransaction();
+    		transaction.replace(android.R.id.content, newDirectory, Long.toString(uuid));
+    		transaction.addToBackStack(null);
+    		transaction.commit();
+    	} else {
+    		fragment.processResponse(files, directories);
+    	}
+    }
+
+    
+    
     
     
     
@@ -227,7 +245,7 @@ public class ConnectionActivity extends Activity implements DirectoryListener {
             // representation of that from the raw service object.
             mService = new Messenger(service);
 
-           	initiateQueuedConnections();
+           	showQueuedConnections();
         }
 
         public void onServiceDisconnected(ComponentName className) {

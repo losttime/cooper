@@ -192,17 +192,18 @@ public class MainActivity extends Activity implements OnAddConnectionOptionListe
         }
     }
     
-    public void connectionEstablished(long id) {
-    	if (MainActivity.isDebuggable) Log.i(TAG, "Creating a new fragment for this connection with tag (" + Long.toString(id) + ")");
+    public void connectionEstablished(long uuid) {
+    	if (MainActivity.isDebuggable) Log.i(TAG, "Creating a new fragment for this connection with tag (" + Long.toString(uuid) + ")");
+    	
+    	// Open the Connection Activity
+    	Intent intent = new Intent(this, ConnectionActivity.class);
+    	intent.putExtra("uuid", uuid);
+    	//intent.putStringArrayListExtra("files", files);
+    	//intent.putStringArrayListExtra("directories", directories);
+    	startActivity(intent);
     }
     
     public void handleResponse(long uuid, ArrayList<String> files, ArrayList<String> directories) {
-    	// Should open a new Activity
-    	Intent intent = new Intent(this, ConnectionActivity.class);
-    	intent.putExtra("uuid", uuid);
-    	intent.putStringArrayListExtra("files", files);
-    	intent.putStringArrayListExtra("directories", directories);
-    	startActivity(intent);
     	//sendResponseToDirectoryFragment(uuid, files, directories);
     }
     

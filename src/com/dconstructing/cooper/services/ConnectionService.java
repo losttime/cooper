@@ -122,7 +122,7 @@ public class ConnectionService extends Service {
     		
     	}
     	
-    	sendCommand(uuid, "pwd", null, reply);
+    	//sendCommand(uuid, "pwd", null, reply);
     }
     
     public synchronized void connectionFailed(Long uuid) {
@@ -216,7 +216,7 @@ public class ConnectionService extends Service {
     	
     	private final long tUuid;
     	private final Session tSession;
-    	private final String tCommand;
+    	private String tCommand;
     	private final String tPath;
     	private Messenger tReply;
 
@@ -242,6 +242,12 @@ public class ConnectionService extends Service {
 				
 				try {
 					Object response = null;
+					
+					if (tPath == null) {
+						if (MainActivity.isDebuggable) Log.i(TAG, "Updating command to pwd");
+						tCommand = "pwd";
+					}
+					
 					if (tCommand.equals("ls")) {
 						Vector<ChannelSftp.LsEntry> list = channel.ls(tPath);
 						response = list;
