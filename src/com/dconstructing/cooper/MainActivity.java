@@ -198,19 +198,11 @@ public class MainActivity extends Activity implements OnAddConnectionOptionListe
     	// Open the Connection Activity
     	Intent intent = new Intent(this, ConnectionActivity.class);
     	intent.putExtra("uuid", uuid);
-    	//intent.putStringArrayListExtra("files", files);
-    	//intent.putStringArrayListExtra("directories", directories);
     	startActivity(intent);
     }
+
     
-    public void handleResponse(long uuid, ArrayList<String> files, ArrayList<String> directories) {
-    	//sendResponseToDirectoryFragment(uuid, files, directories);
-    }
     
-    public void handleResponse(long uuid, String command, String response) {
-    	// TODO: Shouldn't get here - throw exception
-    }
-        
     
     
     
@@ -226,17 +218,6 @@ public class MainActivity extends Activity implements OnAddConnectionOptionListe
                 	Bundle bundle = msg.getData();
                 	connectionEstablished(bundle.getLong("uuid"));
                     break;
-                case ConnectionService.MSG_COMMAND_RETURN:
-                	Bundle cmdBundle = msg.getData();
-                	String response = cmdBundle.getString("response");
-                	if (response == null) {
-                		ArrayList<String> files = cmdBundle.getStringArrayList("files");
-                		ArrayList<String> directories = cmdBundle.getStringArrayList("directories");
-                		handleResponse(cmdBundle.getLong("uuid"), files, directories);
-                	} else {
-                		handleResponse(cmdBundle.getLong("uuid"), cmdBundle.getString("command"), response);
-                	}
-                	break;
                 case ConnectionService.MSG_CONNECTION_CHECKED:
                 	Bundle checkedBundle = msg.getData();
                 	boolean hasConnection = checkedBundle.getBoolean("hasConnection");
