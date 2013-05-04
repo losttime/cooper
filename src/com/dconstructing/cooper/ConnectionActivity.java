@@ -1,7 +1,6 @@
 package com.dconstructing.cooper;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 
 import android.app.ActionBar;
@@ -22,10 +21,12 @@ import android.util.Log;
 
 import com.dconstructing.cooper.fragments.ConnectedDirectoryFragment;
 import com.dconstructing.cooper.fragments.ConnectedDirectoryFragment.DirectoryListener;
+import com.dconstructing.cooper.fragments.ConnectedFileFragment;
+import com.dconstructing.cooper.fragments.ConnectedFileFragment.FileListener;
 import com.dconstructing.cooper.objects.FilePath;
 import com.dconstructing.cooper.services.ConnectionService;
 
-public class ConnectionActivity extends Activity implements DirectoryListener {
+public class ConnectionActivity extends Activity implements DirectoryListener, FileListener {
 
 	public final String TAG = getClass().getSimpleName();
 	
@@ -73,6 +74,10 @@ public class ConnectionActivity extends Activity implements DirectoryListener {
 		}
 	}
 
+	@Override
+	public void onFileSaved(String tag, FilePath filePath) {
+		// TODO Auto-generated method stub
+	}
 	
 	
 	
@@ -82,18 +87,6 @@ public class ConnectionActivity extends Activity implements DirectoryListener {
 	
 	
     
-    /*
-    public void initiateQueuedConnections() {
-    	if (MainActivity.isDebuggable) Log.i(TAG, "Working through the queue");
-    	
-    	Iterator<HashMap<String, Object>> it = mOpenQueue.iterator();
-    	while (it.hasNext()) {
-    		HashMap<String, Object> read = (HashMap<String, Object>) it.next();
-    		onDirectoryItemSelected((String)read.get("tag"),(FilePath)read.get("filePath"));
-    		it.remove();
-    	}
-    }
-	*/
     
     public void showConnection(long uuid) {
     	if (mService == null) {
@@ -176,12 +169,12 @@ public class ConnectionActivity extends Activity implements DirectoryListener {
     	sendResponseToDirectoryFragment(uuid, files, directories);
     }
     
-    public void handleResponse(long uuid, String command, String response) {
+    public void handleResponse(long uuid, String command, String path, String response) {
    		// display file fragment
     	if (MainActivity.isDebuggable) Log.i(TAG, "Displaying file: " + response);
     	if (MainActivity.isDebuggable) Log.i(TAG, "Looking for fragment with tag: " + Long.toString(uuid));
     	// TODO: Actually display file contents on file fragment
-   		//sendResponseToFileFragment(uuid, response);
+   		sendResponseToFileFragment(uuid, path, response);
     }
 
     public void sendResponseToDirectoryFragment(long uuid, ArrayList<String> files, ArrayList<String> directories) {
@@ -202,6 +195,26 @@ public class ConnectionActivity extends Activity implements DirectoryListener {
     		transaction.commit();
     	} else {
     		fragment.processResponse(files, directories);
+    	}
+    }
+    
+    public void sendResponseToFileFragment(long uuid, String path, String response) {
+    	if (MainActivity.isDebuggable) Log.i(TAG, "Looking for fragment with tag: " + Long.toString(uuid) + ":" + path);
+    	FragmentManager fm = getFragmentManager();
+    	ConnectedFileFragment fragment = (ConnectedFileFragment)fm.findFragmentByTag(Long.toString(uuid) + ":" + path);
+    	if (fragment == null) {
+    		if (MainActivity.isDebuggable) Log.i(TAG, "Fragment is null");
+    		// create fragment with response
+    		Bundle bundle = new Bundle();
+    		bundle.putString("content", response);
+    		ConnectedFileFragment newDirectory = new ConnectedFileFragment();
+    		newDirectory.setArguments(bundle);
+    		FragmentTransaction transaction = fm.beginTransaction();
+    		transaction.replace(android.R.id.content, newDirectory, Long.toString(uuid) + ":" + path);
+    		transaction.addToBackStack(null);
+    		transaction.commit();
+    	} else {
+    		fragment.processResponse(response);
     	}
     }
 
@@ -226,7 +239,7 @@ public class ConnectionActivity extends Activity implements DirectoryListener {
                 		ArrayList<String> directories = cmdBundle.getStringArrayList("directories");
                 		handleResponse(cmdBundle.getLong("uuid"), files, directories);
                 	} else {
-                		handleResponse(cmdBundle.getLong("uuid"), cmdBundle.getString("command"), response);
+                		handleResponse(cmdBundle.getLong("uuid"), cmdBundle.getString("command"), cmdBundle.getString("path"), response);
                 	}
                 default:
                     super.handleMessage(msg);
@@ -257,5 +270,5 @@ public class ConnectionActivity extends Activity implements DirectoryListener {
             if (MainActivity.isDebuggable) Log.e(TAG, "Disconnected from service unintentionally - confirmed");
         }
     };
-    
+
 }

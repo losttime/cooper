@@ -66,13 +66,14 @@ public class ConnectionService extends Service {
 		thread.start();
 	}
 
-    public void sendResponse(long uuid, String command, Object response, Messenger reply) {
+    public void sendResponse(long uuid, String command, String path, Object response, Messenger reply) {
     	try {
     		Bundle bundle = new Bundle();
         	bundle.putLong("uuid", uuid);
         	bundle.putString("command", command);
         	if (response instanceof String) {
         		bundle.putString("response", (String)response);
+        		bundle.putString("path", path);
         	} else if (response instanceof HashMap) {
         		for (Map.Entry<String, ArrayList<String>> entry : ((HashMap<String, ArrayList<String>>) response).entrySet()) {
         			bundle.putStringArrayList(entry.getKey(), entry.getValue());
@@ -149,7 +150,7 @@ public class ConnectionService extends Service {
 				contents.put("files", files);
 				contents.put("directories", directories);
 
-    			sendResponse(uuid, command, contents, reply);
+    			sendResponse(uuid, command, path, contents, reply);
     		}
     	} else if (command.indexOf("pwd") == 0) {
     		// Response is the connection path. Set it.
@@ -159,7 +160,7 @@ public class ConnectionService extends Service {
     		sendCommand(uuid, "ls", null, reply);
     	} else if (command.indexOf("vi") == 0) {
     		// Opening the file, just send the response to the user
-    		sendResponse(uuid, command, (String)response, reply);
+    		sendResponse(uuid, command, path, (String)response, reply);
     	}
     }
     

@@ -15,6 +15,8 @@
     <string name="password_hint">password</string>
     <string name="password_desc">Password will be asked for at login.</string>
     
+    <string name="empty_file_hint">File Content</string>
+    
     <string name="login_button">Login</string>
     <string name="cancel_button">Cancel</string>
 

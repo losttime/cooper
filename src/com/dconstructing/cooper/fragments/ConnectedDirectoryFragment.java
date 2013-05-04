@@ -3,6 +3,7 @@ package com.dconstructing.cooper.fragments;
 import java.util.ArrayList;
 
 import android.app.Activity;
+import android.app.ListFragment;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -15,7 +16,7 @@ import com.dconstructing.cooper.MainActivity;
 import com.dconstructing.cooper.R;
 import com.dconstructing.cooper.objects.FilePath;
 
-public class ConnectedDirectoryFragment extends ConnectedFragment {
+public class ConnectedDirectoryFragment extends ListFragment {
 
 	public final String TAG = getClass().getSimpleName();
 	
