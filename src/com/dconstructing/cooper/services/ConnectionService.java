@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -39,6 +40,18 @@ public class ConnectionService extends Service {
 	public static final int MSG_CONNECTION_CHECKED = 104;
 	public static final int MSG_COMMAND_DISPATCH = 201;
 	public static final int MSG_COMMAND_RETURN = 202;
+	public static final int MSG_FILE_SAVE = 301;
+	public static final int MSG_FILE_SAVED = 302;
+	
+	public static final int CMD_WHERE_AM_I = 1001;
+	public static final int CMD_CHANGE_LOCATION = 1001;
+	public static final int CMD_DIR_READ = 2001;
+	public static final int CMD_DIR_MAKE = 2003;
+	public static final int CMD_DIR_DEL = 2004;
+	public static final int CMD_FILE_READ = 3001;
+	public static final int CMD_FILE_WRITE = 3002;
+	public static final int CMD_FILE_MAKE = 3003;
+	public static final int CMD_FILE_DELETE = 3004;
 	
 	protected Map<Long,Connection> mConnections = new HashMap<Long,Connection>();
 	
@@ -57,23 +70,20 @@ public class ConnectionService extends Service {
 		thread.start();
 	}
 	
-	public void sendCommand(Long uuid, String command, String pathChange, Messenger reply) {
+	public void sendCommand(Long uuid, int command, String parameter, String content, Messenger reply) {
 		Connection connection = mConnections.get(uuid);
-		if (pathChange != null) {
-			connection.updatePath(pathChange);
-		}
-		CommandThread thread = new CommandThread(uuid, connection.session, command, connection.path, reply);
+		CommandThread thread = new CommandThread(uuid, connection.session, command, parameter, content, reply);
 		thread.start();
 	}
 
-    public void sendResponse(long uuid, String command, String path, Object response, Messenger reply) {
+    public void sendResponse(long uuid, int command, String parameter, Object response, Messenger reply) {
     	try {
     		Bundle bundle = new Bundle();
         	bundle.putLong("uuid", uuid);
-        	bundle.putString("command", command);
+        	bundle.putInt("command", command);
         	if (response instanceof String) {
         		bundle.putString("response", (String)response);
-        		bundle.putString("path", path);
+        		bundle.putString("parameter", parameter);
         	} else if (response instanceof HashMap) {
         		for (Map.Entry<String, ArrayList<String>> entry : ((HashMap<String, ArrayList<String>>) response).entrySet()) {
         			bundle.putStringArrayList(entry.getKey(), entry.getValue());
@@ -88,6 +98,21 @@ public class ConnectionService extends Service {
     	}
     }
     
+    public void sendSaved(long uuid, String parameter, Object response, Messenger reply) {
+    	try {
+    		Bundle bundle = new Bundle();
+        	bundle.putLong("uuid", uuid);
+        	bundle.putString("response", (String)response);
+        	bundle.putString("parameter", parameter);
+        	Message msg = Message.obtain(null, ConnectionService.MSG_FILE_SAVED);
+    		msg.setData(bundle);
+    		msg.replyTo = mMessenger;
+    		reply.send(msg);
+    	} catch (RemoteException e) {
+    		
+    	}    	
+    }
+    
     public boolean checkForConnection(long uuid) {
     	if (MainActivity.isDebuggable) Log.i(TAG, "Checking connection boolean");
     	boolean hasConnection = false;
@@ -96,6 +121,12 @@ public class ConnectionService extends Service {
     		hasConnection = true;
     	}
     	return hasConnection;
+    }
+    
+    public void saveFile(Long uuid, String parameter, String content, Messenger reply) {
+		Connection connection = mConnections.get(uuid);
+		CommandThread thread = new CommandThread(uuid, connection.session, CMD_FILE_WRITE, parameter, content, reply);
+		thread.start();
     }
 
     
@@ -130,9 +161,19 @@ public class ConnectionService extends Service {
     	if (MainActivity.isDebuggable) Log.e(TAG, "connection failed " + Long.toString(uuid));
     }
     
-    public synchronized void commandResponse(long uuid, String command, String path, Object response, Messenger reply) {
+    public synchronized void commandResponse(long uuid, int command, String parameter, Object response, Messenger reply) {
     	if (MainActivity.isDebuggable) Log.i(TAG, "Got response from command");
-    	if (command.indexOf("ls") == 0) {
+    	if (command == CMD_WHERE_AM_I) {
+    		// Response is the connection path. Set it.
+    		Connection connection = mConnections.get(uuid);
+    		connection.path = ((String)response).replaceAll("\n", "");
+    		mConnections.put(uuid, connection);
+    		sendCommand(uuid, CMD_DIR_READ, connection.path, null, reply);
+    	} else if (command == CMD_CHANGE_LOCATION) {
+			Connection connection = mConnections.get(uuid);
+			connection.updatePath(parameter);
+			sendCommand(uuid, CMD_DIR_READ, connection.path, null, reply);
+    	} else if (command == CMD_DIR_READ) {
     		if (response instanceof Vector) {
     			HashMap<String, ArrayList<String>> contents = new HashMap<String, ArrayList<String>>();
     			
@@ -146,21 +187,18 @@ public class ConnectionService extends Service {
 						files.add(item.getFilename());
 					}
 				}
-				
+
 				contents.put("files", files);
 				contents.put("directories", directories);
 
-    			sendResponse(uuid, command, path, contents, reply);
+    			sendResponse(uuid, command, parameter, contents, reply);
     		}
-    	} else if (command.indexOf("pwd") == 0) {
-    		// Response is the connection path. Set it.
-    		Connection connection = mConnections.get(uuid);
-    		connection.path = ((String)response).replaceAll("\n", "");
-    		mConnections.put(uuid, connection);
-    		sendCommand(uuid, "ls", null, reply);
-    	} else if (command.indexOf("vi") == 0) {
+    	} else if (command == CMD_FILE_READ) {
     		// Opening the file, just send the response to the user
-    		sendResponse(uuid, command, path, (String)response, reply);
+    		sendResponse(uuid, command, parameter, (String)response, reply);
+    	} else if (command == CMD_FILE_WRITE) {
+    		sendResponse(uuid, command, parameter, (String)response, reply);
+    		//sendSaved(uuid, path, (String)response, reply);
     	}
     }
     
@@ -191,7 +229,7 @@ public class ConnectionService extends Service {
 	            case MSG_COMMAND_DISPATCH:
 	            	if (MainActivity.isDebuggable) Log.i(TAG, "Send Command Message");
 	            	Bundle cmdBundle = msg.getData();
-	            	service.sendCommand(cmdBundle.getLong("uuid"), cmdBundle.getString("command"), cmdBundle.getString("pathChange"), msg.replyTo);
+	            	service.sendCommand(cmdBundle.getLong("uuid"), cmdBundle.getInt("command"), cmdBundle.getString("parameter"), cmdBundle.getString("content"), msg.replyTo);
 	                break;
 	            case MSG_CONNECTION_CHECK:
 	            	if (MainActivity.isDebuggable) Log.i(TAG, "Checking for existing connection");
@@ -206,6 +244,11 @@ public class ConnectionService extends Service {
 	            		
 	            	}
 	            	break;
+	            case MSG_FILE_SAVE:
+	            	if (MainActivity.isDebuggable) Log.i(TAG, "Saving file service");
+	            	Bundle saveBundle = msg.getData();
+	            	service.saveFile(saveBundle.getLong("uuid"), saveBundle.getString("parameter"), saveBundle.getString("content"), msg.replyTo);
+	            	break;
 	            default:
 	                super.handleMessage(msg);
             }
@@ -217,20 +260,22 @@ public class ConnectionService extends Service {
     	
     	private final long tUuid;
     	private final Session tSession;
-    	private String tCommand;
-    	private final String tPath;
+    	private int tCommand;
+    	private final String tParameter;
+    	private final String tContent;
     	private Messenger tReply;
 
-        public CommandThread(long uuid, Session session, String command, String path, Messenger reply) {
+        public CommandThread(long uuid, Session session, int command, String parameter, String content, Messenger reply) {
         	tUuid = uuid;
         	tSession = session;
             tCommand = command;
-            tPath = path;
+            tParameter = parameter;
+            tContent = content;
             tReply = reply;
         }
 
         public void run() {
-        	if (MainActivity.isDebuggable) Log.i(TAG, "Sending command: " + tCommand + " " + tPath);
+        	if (MainActivity.isDebuggable) Log.i(TAG, "Sending command: " + tCommand);
         	
         	try {
         		// An exec channel seems to give the response I want - scratch that
@@ -244,19 +289,21 @@ public class ConnectionService extends Service {
 				try {
 					Object response = null;
 					
-					if (tPath == null) {
+					if (tParameter == null) {
 						if (MainActivity.isDebuggable) Log.i(TAG, "Updating command to pwd");
-						tCommand = "pwd";
+						tCommand = CMD_WHERE_AM_I;
 					}
 					
-					if (tCommand.equals("ls")) {
-						Vector<ChannelSftp.LsEntry> list = channel.ls(tPath);
-						response = list;
-					} else if (tCommand.equals("pwd")) {
+					if (tCommand == CMD_WHERE_AM_I) {
 						String pwd = channel.pwd();
 						response = pwd;
-					} else if (tCommand.equals("vi")) {
-						InputStream inputStream = channel.get(tPath);
+					} else if (tCommand == CMD_CHANGE_LOCATION) {
+						channel.cd(tParameter);
+					} else if (tCommand == CMD_DIR_READ) {
+						Vector<ChannelSftp.LsEntry> list = channel.ls(tParameter);
+						response = list;
+					} else if (tCommand == CMD_FILE_READ) {
+						InputStream inputStream = channel.get(tParameter);
 						BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
 
 						StringBuilder stringBuilder = new StringBuilder();
@@ -268,8 +315,13 @@ public class ConnectionService extends Service {
 
 					    inputStream.close();
 						response = stringBuilder.toString();
+					} else if (tCommand == CMD_FILE_WRITE) {
+						OutputStream outputStream = channel.put(tParameter);
+						outputStream.write(tContent.getBytes());
+						outputStream.close();
+						response = tContent;
 					}
-					commandResponse(tUuid, tCommand, tPath, response, tReply);
+					commandResponse(tUuid, tCommand, tParameter, response, tReply);
 				} catch (SftpException e) {
 					e.printStackTrace();
 				}

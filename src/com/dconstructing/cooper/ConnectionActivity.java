@@ -49,7 +49,6 @@ public class ConnectionActivity extends Activity implements DirectoryListener, F
         	Intent intent = getIntent();
         	long uuid = intent.getLongExtra("uuid", 0);
         	showConnection(uuid);
-       		//bringToFront(uuid);
         }
 	    
 	}
@@ -67,7 +66,8 @@ public class ConnectionActivity extends Activity implements DirectoryListener, F
 	        }
 		} else {
 			if (filePath.isDirectory) {
-				loadDirectoryContent(Long.parseLong(tag), filePath.name);			
+				changeDirectory(Long.parseLong(tag), filePath.name);
+				//loadDirectoryContent(Long.parseLong(tag), filePath.name);			
 			} else {
 				openSelectedItem(Long.parseLong(tag), filePath.name);
 			}
@@ -75,8 +75,20 @@ public class ConnectionActivity extends Activity implements DirectoryListener, F
 	}
 
 	@Override
-	public void onFileSaved(String tag, FilePath filePath) {
-		// TODO Auto-generated method stub
+	public void onFileSaved(Long uuid, FilePath filePath, String content) {
+    	if (MainActivity.isDebuggable) Log.i(TAG, "Constructing File Save Command");
+    	Bundle bundle = new Bundle();
+    	bundle.putLong("uuid", uuid);
+    	bundle.putString("parameter", filePath.toString());
+    	bundle.putString("content", content);
+        Message msg = Message.obtain(null, ConnectionService.MSG_FILE_SAVE);
+        msg.setData(bundle);
+        msg.replyTo = mMessenger;
+		try {
+			mService.send(msg);
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}		
 	}
 	
 	
@@ -137,8 +149,24 @@ public class ConnectionActivity extends Activity implements DirectoryListener, F
     	if (MainActivity.isDebuggable) Log.i(TAG, "Loading Directory content");
     	Bundle bundle = new Bundle();
     	bundle.putLong("uuid", uuid);
-    	bundle.putString("command", "ls");
-    	bundle.putString("pathChange", itemName);
+    	bundle.putInt("command", ConnectionService.CMD_DIR_READ);
+    	bundle.putString("parameter", itemName);
+        Message msg = Message.obtain(null, ConnectionService.MSG_COMMAND_DISPATCH);
+        msg.setData(bundle);
+        msg.replyTo = mMessenger;
+		try {
+			mService.send(msg);
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
+    }
+    
+    public void changeDirectory(long uuid, String itemName) {
+    	if (MainActivity.isDebuggable) Log.i(TAG, "Changing Directory");
+    	Bundle bundle = new Bundle();
+    	bundle.putLong("uuid", uuid);
+    	bundle.putInt("command", ConnectionService.CMD_CHANGE_LOCATION);
+    	bundle.putString("parameter", itemName);
         Message msg = Message.obtain(null, ConnectionService.MSG_COMMAND_DISPATCH);
         msg.setData(bundle);
         msg.replyTo = mMessenger;
@@ -153,8 +181,8 @@ public class ConnectionActivity extends Activity implements DirectoryListener, F
     	if (MainActivity.isDebuggable) Log.i(TAG, "Loading Directory content");
     	Bundle bundle = new Bundle();
     	bundle.putLong("uuid", uuid);
-    	bundle.putString("command", "vi");
-    	bundle.putString("pathChange", itemName);
+    	bundle.putInt("command", ConnectionService.CMD_FILE_READ);
+    	bundle.putString("parameter", itemName);
         Message msg = Message.obtain(null, ConnectionService.MSG_COMMAND_DISPATCH);
         msg.setData(bundle);
         msg.replyTo = mMessenger;
@@ -169,12 +197,15 @@ public class ConnectionActivity extends Activity implements DirectoryListener, F
     	sendResponseToDirectoryFragment(uuid, files, directories);
     }
     
-    public void handleResponse(long uuid, String command, String path, String response) {
-   		// display file fragment
-    	if (MainActivity.isDebuggable) Log.i(TAG, "Displaying file: " + response);
-    	if (MainActivity.isDebuggable) Log.i(TAG, "Looking for fragment with tag: " + Long.toString(uuid));
-    	// TODO: Actually display file contents on file fragment
-   		sendResponseToFileFragment(uuid, path, response);
+    public void handleResponse(long uuid, int command, String path, String response) {
+    	if (command == ConnectionService.CMD_FILE_READ) {
+	   		// display file fragment
+	    	if (MainActivity.isDebuggable) Log.i(TAG, "Displaying file: " + response);
+	    	if (MainActivity.isDebuggable) Log.i(TAG, "Looking for fragment with tag: " + Long.toString(uuid));
+	   		sendResponseToFileFragment(uuid, path, response);
+    	} else if (command == ConnectionService.CMD_FILE_WRITE) {
+    		// TODO: Should I do anything here?
+    	}
     }
 
     public void sendResponseToDirectoryFragment(long uuid, ArrayList<String> files, ArrayList<String> directories) {
@@ -206,6 +237,8 @@ public class ConnectionActivity extends Activity implements DirectoryListener, F
     		if (MainActivity.isDebuggable) Log.i(TAG, "Fragment is null");
     		// create fragment with response
     		Bundle bundle = new Bundle();
+    		bundle.putLong("uuid", uuid);
+    		bundle.putString("path", path);
     		bundle.putString("content", response);
     		ConnectedFileFragment newDirectory = new ConnectedFileFragment();
     		newDirectory.setArguments(bundle);
@@ -239,7 +272,7 @@ public class ConnectionActivity extends Activity implements DirectoryListener, F
                 		ArrayList<String> directories = cmdBundle.getStringArrayList("directories");
                 		handleResponse(cmdBundle.getLong("uuid"), files, directories);
                 	} else {
-                		handleResponse(cmdBundle.getLong("uuid"), cmdBundle.getString("command"), cmdBundle.getString("path"), response);
+                		handleResponse(cmdBundle.getLong("uuid"), cmdBundle.getInt("command"), cmdBundle.getString("parameter"), response);
                 	}
                 default:
                     super.handleMessage(msg);

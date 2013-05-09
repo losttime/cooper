@@ -18,7 +18,9 @@ public class ConnectedFileFragment extends Fragment {
 	public final String TAG = getClass().getSimpleName();
 	
 	FileListener mFileCallback;
+	FilePath mPath;
 	String mContent;
+	Long mUuid;
 	
 	@Override
 	public void onAttach(Activity activity) {
@@ -38,7 +40,9 @@ public class ConnectedFileFragment extends Fragment {
 		super.onCreate(savedInstanceState);
 		Bundle arguments = getArguments();
 		if (arguments != null) {
+			mPath = new FilePath(arguments.getString("path"), false);
 			mContent = arguments.getString("content");
+			mUuid = arguments.getLong("uuid");
 		}
 	}
 
@@ -57,7 +61,12 @@ public class ConnectedFileFragment extends Fragment {
 		}
 	}
 	
-	
+	@Override
+	public void onDestroyView() {
+		if (MainActivity.isDebuggable) Log.i(TAG, "onDestroyView");
+		saveContent();
+		super.onDestroyView();
+	}
 
 	
 	
@@ -76,6 +85,14 @@ public class ConnectedFileFragment extends Fragment {
 		}
 	}
 	
+	public void saveContent() {
+		if (MainActivity.isDebuggable) Log.i(TAG, "Saving Content");
+		String content = ((EditText)getView().findViewById(R.id.fileContent)).getText().toString();
+		if (content != null) {
+			mFileCallback.onFileSaved(mUuid, mPath, content);
+		}
+	}
+	
 	
 	
 	
@@ -83,6 +100,6 @@ public class ConnectedFileFragment extends Fragment {
 	
 	
 	public interface FileListener {
-        public void onFileSaved(String tag, FilePath filePath);
+        public void onFileSaved(Long Uuid, FilePath filePath, String content);
     }
 }
