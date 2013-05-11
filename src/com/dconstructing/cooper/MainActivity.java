@@ -17,6 +17,7 @@
  */
 package com.dconstructing.cooper;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Iterator;
 
@@ -55,7 +56,7 @@ public class MainActivity extends Activity implements OnAddConnectionOptionListe
     Messenger mService = null;
     ArrayList<Address> mConnectionQueue = new ArrayList<Address>();
     
-    final Messenger mMessenger = new Messenger(new IncomingHandler());
+    final Messenger mMessenger = new Messenger(new IncomingHandler(this));
     
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -225,21 +226,28 @@ public class MainActivity extends Activity implements OnAddConnectionOptionListe
     
     
     
-    class IncomingHandler extends Handler {
-        @Override
+    static class IncomingHandler extends Handler {
+    	private final WeakReference<MainActivity> mActivity;
+    	
+    	IncomingHandler(MainActivity activity) {
+    		mActivity = new WeakReference<MainActivity>(activity);
+    	}
+
+    	@Override
         public void handleMessage(Message msg) {
+    		MainActivity activity = mActivity.get();
             switch (msg.what) {
                 case ConnectionService.MSG_CONNECTION_ESTABLISHED:
                     // Do something become the connection was complete
-                	if (MainActivity.isDebuggable) Log.i(TAG, "Service connection to server - confirmed");
+                	if (MainActivity.isDebuggable) Log.i(activity.TAG, "Service connection to server - confirmed");
                 	Bundle bundle = msg.getData();
-                	connectionEstablished(bundle.getLong("uuid"));
+                	activity.connectionEstablished(bundle.getLong("uuid"));
                     break;
                 case ConnectionService.MSG_CONNECTION_CHECKED:
                 	Bundle checkedBundle = msg.getData();
                 	boolean hasConnection = checkedBundle.getBoolean("hasConnection");
                 	long uuid = checkedBundle.getLong("uuid");
-                	handleConnectionCheck(uuid, checkedBundle.getString("host"), checkedBundle.getString("username"), hasConnection);
+                	activity.handleConnectionCheck(uuid, checkedBundle.getString("host"), checkedBundle.getString("username"), hasConnection);
                 	break;
                 default:
                     super.handleMessage(msg);
