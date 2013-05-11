@@ -66,6 +66,7 @@ public class ConnectedFileFragment extends Fragment {
 	@Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 		if (MainActivity.isDebuggable) Log.i(TAG, "onCreateView");
+		setRetainInstance(true);
         return inflater.inflate(R.layout.fragment_file, container, false);
     }
 

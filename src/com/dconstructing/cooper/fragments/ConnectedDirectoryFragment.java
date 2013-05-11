@@ -67,6 +67,7 @@ public class ConnectedDirectoryFragment extends ListFragment {
 	@Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 		if (MainActivity.isDebuggable) Log.i(TAG, "onCreateView");
+		setRetainInstance(true);
         return inflater.inflate(R.layout.fragment_directory, container, false);
     }
 

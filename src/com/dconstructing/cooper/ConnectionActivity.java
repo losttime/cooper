@@ -50,6 +50,7 @@ public class ConnectionActivity extends Activity implements DirectoryListener, F
 	
 	Messenger mService = null;
 	ArrayList<Long> mConnectionQueue = new ArrayList<Long>();
+	ArrayList<Message> mMessageQueue = new ArrayList<Message>();
 	
 	final Messenger mMessenger = new Messenger(new IncomingHandler(this));
 	
@@ -73,22 +74,11 @@ public class ConnectionActivity extends Activity implements DirectoryListener, F
 	
 	@Override
 	public void onDirectoryItemSelected(String tag, FilePath filePath) {
-		if (mService == null) {
-			//this.queueRead(tag, filePath);
-			
-			if (MainActivity.isDebuggable) Log.i(TAG, "Gotta start the Connection Service");
-	        try {
-	        	getApplicationContext().bindService(new Intent(this, ConnectionService.class), mConnection, Context.BIND_AUTO_CREATE);
-	        } catch (SecurityException e) {
-	        	if (MainActivity.isDebuggable) Log.e(TAG, "Could not bind to service", e);
-	        }
+		if (filePath.isDirectory) {
+			changeDirectory(Long.parseLong(tag), filePath.name);
+			//loadDirectoryContent(Long.parseLong(tag), filePath.name);			
 		} else {
-			if (filePath.isDirectory) {
-				changeDirectory(Long.parseLong(tag), filePath.name);
-				//loadDirectoryContent(Long.parseLong(tag), filePath.name);			
-			} else {
-				openSelectedItem(Long.parseLong(tag), filePath.name);
-			}
+			openSelectedItem(Long.parseLong(tag), filePath.name);
 		}
 	}
 
@@ -102,11 +92,8 @@ public class ConnectionActivity extends Activity implements DirectoryListener, F
         Message msg = Message.obtain(null, ConnectionService.MSG_FILE_SAVE);
         msg.setData(bundle);
         msg.replyTo = mMessenger;
-		try {
-			mService.send(msg);
-		} catch (RemoteException e) {
-			e.printStackTrace();
-		}		
+
+        sendMessage(msg);
 	}
 	
 	
@@ -117,17 +104,37 @@ public class ConnectionActivity extends Activity implements DirectoryListener, F
 	
 	
     
+	
+	public void bindToService() {
+		if (MainActivity.isDebuggable) Log.i(TAG, "Gotta start the Connection Service");
+        try {
+        	getApplicationContext().bindService(new Intent(this, ConnectionService.class), mConnection, Context.BIND_AUTO_CREATE);
+        } catch (SecurityException e) {
+        	if (MainActivity.isDebuggable) Log.e(TAG, "Could not bind to service", e);
+        }
+	}
+	
+	public void sendMessage(Message message) {
+        if (mService == null) {
+			this.queueMessage(message);
+			bindToService();
+		} else {
+			transmitMessage(message);
+		}
+	}
+	
+	public void transmitMessage(Message message) {
+		try {
+			mService.send(message);
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
+	}
     
     public void showConnection(long uuid) {
     	if (mService == null) {
 			this.queueConnection(uuid);
-			
-			if (MainActivity.isDebuggable) Log.i(TAG, "Gotta start the Connection Service");
-	        try {
-	        	getApplicationContext().bindService(new Intent(this, ConnectionService.class), mConnection, Context.BIND_AUTO_CREATE);
-	        } catch (SecurityException e) {
-	        	if (MainActivity.isDebuggable) Log.e(TAG, "Could not bind to service", e);
-	        }
+			bindToService();
     	} else {
     		loadDirectoryContent(uuid, null);
     	}
@@ -149,6 +156,22 @@ public class ConnectionActivity extends Activity implements DirectoryListener, F
     	}
     }
     
+    public void queueMessage(Message message) {
+    	if (MainActivity.isDebuggable) Log.i(TAG, "Queuing message ");
+    	mMessageQueue.add(message);
+    }
+
+    public void sendQueuedMessagess() {
+    	if (MainActivity.isDebuggable) Log.i(TAG, "Working through the message queue");
+    	
+    	Iterator<Message> it = mMessageQueue.iterator();
+    	while (it.hasNext()) {
+    		Message message = (Message) it.next();
+    		sendMessage(message);
+    		it.remove();
+    	}
+    }
+
     /*
     public void bringToFront(long uuid) {
     	if (MainActivity.isDebuggable) Log.i(TAG, "Looking for fragment with tag: " + Long.toString(uuid));
@@ -172,11 +195,8 @@ public class ConnectionActivity extends Activity implements DirectoryListener, F
         Message msg = Message.obtain(null, ConnectionService.MSG_COMMAND_DISPATCH);
         msg.setData(bundle);
         msg.replyTo = mMessenger;
-		try {
-			mService.send(msg);
-		} catch (RemoteException e) {
-			e.printStackTrace();
-		}
+        
+        sendMessage(msg);
     }
     
     public void changeDirectory(long uuid, String itemName) {
@@ -188,11 +208,8 @@ public class ConnectionActivity extends Activity implements DirectoryListener, F
         Message msg = Message.obtain(null, ConnectionService.MSG_COMMAND_DISPATCH);
         msg.setData(bundle);
         msg.replyTo = mMessenger;
-		try {
-			mService.send(msg);
-		} catch (RemoteException e) {
-			e.printStackTrace();
-		}
+        
+        sendMessage(msg);
     }
     
     public void openSelectedItem(long uuid, String itemName) {
@@ -204,11 +221,8 @@ public class ConnectionActivity extends Activity implements DirectoryListener, F
         Message msg = Message.obtain(null, ConnectionService.MSG_COMMAND_DISPATCH);
         msg.setData(bundle);
         msg.replyTo = mMessenger;
-		try {
-			mService.send(msg);
-		} catch (RemoteException e) {
-			e.printStackTrace();
-		}    	
+        
+        sendMessage(msg);
     }
  
     public void handleResponse(long uuid, ArrayList<String> files, ArrayList<String> directories) {
@@ -317,6 +331,7 @@ public class ConnectionActivity extends Activity implements DirectoryListener, F
             mService = new Messenger(service);
 
            	showQueuedConnections();
+           	sendQueuedMessagess();
         }
 
         public void onServiceDisconnected(ComponentName className) {
