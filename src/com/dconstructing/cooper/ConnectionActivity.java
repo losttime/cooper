@@ -17,6 +17,7 @@
  */
 package com.dconstructing.cooper;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Iterator;
 
@@ -50,7 +51,7 @@ public class ConnectionActivity extends Activity implements DirectoryListener, F
 	Messenger mService = null;
 	ArrayList<Long> mConnectionQueue = new ArrayList<Long>();
 	
-	final Messenger mMessenger = new Messenger(new IncomingHandler());
+	final Messenger mMessenger = new Messenger(new IncomingHandler(this));
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -277,9 +278,16 @@ public class ConnectionActivity extends Activity implements DirectoryListener, F
     
     
     
-    class IncomingHandler extends Handler {
+    static class IncomingHandler extends Handler {
+    	private final WeakReference<ConnectionActivity> mActivity;
+    	
+    	IncomingHandler(ConnectionActivity activity) {
+            mActivity = new WeakReference<ConnectionActivity>(activity);
+        }
+    	
         @Override
         public void handleMessage(Message msg) {
+        	ConnectionActivity activity = mActivity.get();
             switch (msg.what) {
                 case ConnectionService.MSG_COMMAND_RETURN:
                 	Bundle cmdBundle = msg.getData();
@@ -287,9 +295,9 @@ public class ConnectionActivity extends Activity implements DirectoryListener, F
                 	if (response == null) {
                 		ArrayList<String> files = cmdBundle.getStringArrayList("files");
                 		ArrayList<String> directories = cmdBundle.getStringArrayList("directories");
-                		handleResponse(cmdBundle.getLong("uuid"), files, directories);
+                		activity.handleResponse(cmdBundle.getLong("uuid"), files, directories);
                 	} else {
-                		handleResponse(cmdBundle.getLong("uuid"), cmdBundle.getInt("command"), cmdBundle.getString("parameter"), response);
+                		activity.handleResponse(cmdBundle.getLong("uuid"), cmdBundle.getInt("command"), cmdBundle.getString("parameter"), response);
                 	}
                 default:
                     super.handleMessage(msg);

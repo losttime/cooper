@@ -17,6 +17,8 @@
  */
 package com.dconstructing.cooper.fragments;
 
+import java.lang.ref.WeakReference;
+
 import android.app.Activity;
 import android.app.ListFragment;
 import android.app.LoaderManager;
@@ -53,22 +55,8 @@ public class ConnectionsFragment extends ListFragment implements LoaderManager.L
     
     boolean defaultedToAdd = false;
 
-    private Handler mHandler = new Handler() {
-    	/**
-    	 * Have to jump through this hoop because we want to move immediately to the add page
-    	 * if the home page is loaded without any connections to display. We can't to a
-    	 * fragment transaction called from onLoadFinished of the Loader Callbacks.
-    	 * Even the Contextual Action Bar uses this message because we don't want to do the
-    	 * same thing from multiple locations.
-    	 */
-        @Override
-        public void handleMessage(Message msg) {
-            if(msg.what == MSG_SHOW_ADD_PAGE) {
-            	mAddConnectionCallback.onAddConnectionSelected();
-            }
-        }
-    };
-    
+    private Handler mHandler = new IncomingHandler(this);
+
 	@Override
 	public void onAttach(Activity activity) {
 		super.onAttach(activity);
@@ -192,7 +180,30 @@ public class ConnectionsFragment extends ListFragment implements LoaderManager.L
 	
 	
 	
-	public interface OnAddConnectionOptionListener {
+    static class IncomingHandler extends Handler {
+    	private final WeakReference<ConnectionsFragment> mFragment;
+    	
+    	IncomingHandler(ConnectionsFragment fragment) {
+            mFragment = new WeakReference<ConnectionsFragment>(fragment);
+        }
+    	
+    	/**
+    	 * Have to jump through this hoop because we want to move immediately to the add page
+    	 * if the home page is loaded without any connections to display. We can't to a
+    	 * fragment transaction called from onLoadFinished of the Loader Callbacks.
+    	 * Even the Contextual Action Bar uses this message because we don't want to do the
+    	 * same thing from multiple locations.
+    	 */
+        @Override
+        public void handleMessage(Message msg) {
+        	ConnectionsFragment fragment = mFragment.get();
+            if(msg.what == MSG_SHOW_ADD_PAGE) {
+            	fragment.mAddConnectionCallback.onAddConnectionSelected();
+            }
+        }
+    };
+
+    public interface OnAddConnectionOptionListener {
         public void onAddConnectionSelected();
         public void connectToServer(long id, String host, String username, boolean recycle);
     }

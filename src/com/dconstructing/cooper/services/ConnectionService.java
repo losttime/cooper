@@ -225,7 +225,7 @@ public class ConnectionService extends Service {
     
 
     
-    class IncomingHandler extends Handler { // Handler of incoming messages from clients.
+    static class IncomingHandler extends Handler { // Handler of incoming messages from clients.
     	private final WeakReference<ConnectionService> mService;
     	
     	IncomingHandler(ConnectionService service) {
@@ -234,35 +234,35 @@ public class ConnectionService extends Service {
     	
         @Override
         public void handleMessage(Message msg) {
-        	if (MainActivity.isDebuggable) Log.i(TAG, "Message received");
         	ConnectionService service = mService.get();
+        	if (MainActivity.isDebuggable) Log.i(service.TAG, "Message received");
         	
             switch (msg.what) {
 	            case MSG_CONNECTION_INITIATE:
-	            	if (MainActivity.isDebuggable) Log.i(TAG, "Initiate Connection");
+	            	if (MainActivity.isDebuggable) Log.i(service.TAG, "Initiate Connection");
 	            	Bundle bundle = msg.getData();
 	            	service.establishConnection(bundle.getLong("uuid"), bundle.getString("host"), bundle.getInt("port"), bundle.getString("username"), bundle.getString("password"), msg.replyTo);
 	                break;
 	            case MSG_COMMAND_DISPATCH:
-	            	if (MainActivity.isDebuggable) Log.i(TAG, "Send Command Message");
+	            	if (MainActivity.isDebuggable) Log.i(service.TAG, "Send Command Message");
 	            	Bundle cmdBundle = msg.getData();
 	            	service.sendCommand(cmdBundle.getLong("uuid"), cmdBundle.getInt("command"), cmdBundle.getString("parameter"), cmdBundle.getString("content"), msg.replyTo);
 	                break;
 	            case MSG_CONNECTION_CHECK:
-	            	if (MainActivity.isDebuggable) Log.i(TAG, "Checking for existing connection");
+	            	if (MainActivity.isDebuggable) Log.i(service.TAG, "Checking for existing connection");
 	            	Bundle checkBundle = msg.getData();
 	            	try {
 	            		checkBundle.putBoolean("hasConnection", service.checkForConnection(checkBundle.getLong("uuid")));
 	                	Message outgoingMsg = Message.obtain(null, ConnectionService.MSG_CONNECTION_CHECKED);
 	                	outgoingMsg.setData(checkBundle);
-	                	outgoingMsg.replyTo = mMessenger;
+	                	outgoingMsg.replyTo = service.mMessenger;
 	            		msg.replyTo.send(outgoingMsg);
 	            	} catch (RemoteException e) {
 	            		
 	            	}
 	            	break;
 	            case MSG_FILE_SAVE:
-	            	if (MainActivity.isDebuggable) Log.i(TAG, "Saving file service");
+	            	if (MainActivity.isDebuggable) Log.i(service.TAG, "Saving file service");
 	            	Bundle saveBundle = msg.getData();
 	            	service.saveFile(saveBundle.getLong("uuid"), saveBundle.getString("parameter"), saveBundle.getString("content"), msg.replyTo);
 	            	break;
