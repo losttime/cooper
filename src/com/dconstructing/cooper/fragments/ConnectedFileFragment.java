@@ -98,6 +98,7 @@ public class ConnectedFileFragment extends Fragment {
 	
 	public void insertContent() {
 		EditText editor = (EditText)getView().findViewById(R.id.fileContent);
+		editor.setHorizontallyScrolling(true);
 		if (mContent != null) {
 			editor.setText(mContent);
 		}

@@ -34,7 +34,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         android:gravity="top"
         android:hint="@string/empty_file_hint"
         android:inputType="text|textMultiLine|textNoSuggestions"
-        android:scrollHorizontally="true" />
+        android:scrollHorizontally="true"
+        android:typeface="monospace" />
 
     <TextView
         android:layout_width="match_parent"
