@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+This file is part of Cooper, a touch-friendly SSH client for Android devices
+Copyright (C) 2013  David Cox <losttime.shuffle@gmail.com>
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-->
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    tools:context=".MainActivity" >
+
+    <EditText
+        android:id="@+id/connection_address_field"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:autoLink="none"
+        android:enabled="true"
+        android:hint="@string/address_hint"
+        android:inputType="textNoSuggestions"
+        android:lines="1"
+        android:linksClickable="false"
+        android:singleLine="true"
+        android:textColor="#000"
+        android:textColorHint="#666" />
+
+    <EditText
+        android:id="@+id/connection_username_field"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/connection_address_field"
+        android:autoLink="none"
+        android:enabled="true"
+        android:hint="@string/username_hint"
+        android:inputType="textNoSuggestions"
+        android:lines="1"
+        android:linksClickable="false"
+        android:singleLine="true"
+        android:textColor="#000"
+        android:textColorHint="#666" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/connection_username_field"
+        android:layout_centerHorizontal="true"
+        android:text="@string/password_desc" />
+
+</RelativeLayout>
