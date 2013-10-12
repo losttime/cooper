@@ -34,3 +34,6 @@ local.properties
 
 # Mac
 .DS_Store
+
+#files
+*.png
