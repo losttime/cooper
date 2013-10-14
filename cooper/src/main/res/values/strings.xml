@@ -34,6 +34,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <string name="login_button">Login</string>
     <string name="cancel_button">Cancel</string>
 
+    <string name="indicator_description">Connection Indicator</string>
     <string name="disconnect">Disconnect</string>
 
 </resources>

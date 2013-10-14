@@ -9,6 +9,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CursorAdapter;
+import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.dconstructing.cooper.MainActivity;
@@ -45,33 +47,41 @@ public class ConnectionAdapter extends CursorAdapter {
         TextView secondaryText = (TextView)view.findViewById(android.R.id.text2);
         secondaryText.setText(cursor.getString(cursor.getColumnIndex(CooperOpenHelper.HOST_FIELD_NAME)));
 
+        RelativeLayout indicatorContainer = (RelativeLayout)view.findViewById(R.id.connection_status);
+        ProgressBar progressBar = (ProgressBar)indicatorContainer.findViewById(R.id.progressBar);
+
         MainActivity activity = (MainActivity) context;
         if (MainActivity.isDebuggable) Log.i(TAG, "Map:" + activity.mConnectionsStatus.toString());
         if (activity.mConnectionsStatus.containsKey(entryId)) {
             if (MainActivity.isDebuggable) Log.i(TAG, "Map contains:" + Long.toString(entryId));
             switch(activity.mConnectionsStatus.get(entryId)) {
                 case Connection.CONNECTING:
-                    view.setBackgroundColor(Color.argb(10,255,255,0));
+                    indicatorContainer.setBackgroundColor(Color.argb(10,255,255,0));
+                    progressBar.setVisibility(View.VISIBLE);
                     break;
                 case Connection.CONNECTED:
-                    view.setBackgroundColor(Color.argb(10,0,255,0));
+                    indicatorContainer.setBackgroundColor(Color.argb(10,0,255,0));
+                    progressBar.setVisibility(View.INVISIBLE);
                     break;
                 case Connection.DISCONNECTING:
-                    view.setBackgroundColor(Color.argb(10,255,255,0));
+                    indicatorContainer.setBackgroundColor(Color.argb(10,255,255,0));
+                    progressBar.setVisibility(View.VISIBLE);
                     break;
                 default:
-                    view.setBackgroundColor(Color.argb(10,255,0,0));
+                    indicatorContainer.setBackgroundColor(Color.argb(10,255,0,0));
+                    progressBar.setVisibility(View.INVISIBLE);
                     break;
             }
         } else {
             if (MainActivity.isDebuggable) Log.i(TAG, "Map does not contain:" + Long.toString(entryId));
-            view.setBackgroundColor(Color.argb(10,255,0,0));
+            indicatorContainer.setBackgroundColor(Color.argb(10,255,0,0));
+            progressBar.setVisibility(View.INVISIBLE);
         }
     }
 
     @Override
     public View newView(Context context, Cursor cursor, ViewGroup parent) {
-        final View view = mInflater.inflate(android.R.layout.simple_list_item_2, parent, false);
+        final View view = mInflater.inflate(R.layout.connection_list_item, parent, false);
         return view;
     }
 
