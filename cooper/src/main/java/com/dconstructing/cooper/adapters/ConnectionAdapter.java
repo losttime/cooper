@@ -56,25 +56,25 @@ public class ConnectionAdapter extends CursorAdapter {
             if (MainActivity.isDebuggable) Log.i(TAG, "Map contains:" + Long.toString(entryId));
             switch(activity.mConnectionsStatus.get(entryId)) {
                 case Connection.CONNECTING:
-                    indicatorContainer.setBackgroundColor(Color.argb(10,255,255,0));
+                    indicatorContainer.setBackgroundColor(Color.argb(32,255,255,0));
                     progressBar.setVisibility(View.VISIBLE);
                     break;
                 case Connection.CONNECTED:
-                    indicatorContainer.setBackgroundColor(Color.argb(10,0,255,0));
+                    indicatorContainer.setBackgroundColor(Color.argb(32,0,255,0));
                     progressBar.setVisibility(View.INVISIBLE);
                     break;
                 case Connection.DISCONNECTING:
-                    indicatorContainer.setBackgroundColor(Color.argb(10,255,255,0));
+                    indicatorContainer.setBackgroundColor(Color.argb(32,255,255,0));
                     progressBar.setVisibility(View.VISIBLE);
                     break;
                 default:
-                    indicatorContainer.setBackgroundColor(Color.argb(10,255,0,0));
+                    indicatorContainer.setBackgroundColor(Color.argb(32,255,0,0));
                     progressBar.setVisibility(View.INVISIBLE);
                     break;
             }
         } else {
             if (MainActivity.isDebuggable) Log.i(TAG, "Map does not contain:" + Long.toString(entryId));
-            indicatorContainer.setBackgroundColor(Color.argb(10,255,0,0));
+            indicatorContainer.setBackgroundColor(Color.argb(32,255,0,0));
             progressBar.setVisibility(View.INVISIBLE);
         }
     }
