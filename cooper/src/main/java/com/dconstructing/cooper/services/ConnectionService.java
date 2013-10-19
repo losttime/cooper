@@ -65,7 +65,7 @@ public class ConnectionService extends Service {
 	public static final int MSG_FILE_SAVED = 302;
 	
 	public static final int CMD_WHERE_AM_I = 1001;
-	public static final int CMD_CHANGE_LOCATION = 1001;
+	public static final int CMD_CHANGE_LOCATION = 1002;
 	public static final int CMD_DIR_READ = 2001;
 	public static final int CMD_DIR_MAKE = 2003;
 	public static final int CMD_DIR_DEL = 2004;
