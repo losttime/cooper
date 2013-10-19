@@ -24,6 +24,8 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -217,6 +219,17 @@ public class ConnectionService extends Service {
 						files.add(item.getFilename());
 					}
 				}
+
+				Collections.sort(directories, new Comparator<String>() {
+					public int compare(String string, String otherString) {
+						return string.compareToIgnoreCase(otherString);
+					}
+				});
+				Collections.sort(files, new Comparator<String>() {
+					public int compare(String string, String otherString) {
+						return string.compareToIgnoreCase(otherString);
+					}
+				});
 
 				contents.put("files", files);
 				contents.put("directories", directories);
