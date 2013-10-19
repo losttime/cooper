@@ -62,7 +62,7 @@ public class ConnectionActivity extends Activity implements DirectoryListener, F
 	    ActionBar actionBar = getActionBar();
 	    actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_LIST);
 	    actionBar.setDisplayHomeAsUpEnabled(true);
-	    
+
         if (savedInstanceState == null) {
             // During initial setup
         	Intent intent = getIntent();
@@ -241,7 +241,7 @@ public class ConnectionActivity extends Activity implements DirectoryListener, F
     }
 
     public void sendResponseToDirectoryFragment(long uuid, ArrayList<String> files, ArrayList<String> directories) {
-    	if (MainActivity.isDebuggable) Log.i(TAG, "Looking for fragment with tag: " + Long.toString(uuid));
+		if (MainActivity.isDebuggable) Log.i(TAG, "Looking for directory fragment with tag: " + Long.toString(uuid));
     	FragmentManager fm = getFragmentManager();
     	ConnectedDirectoryFragment fragment = (ConnectedDirectoryFragment)fm.findFragmentByTag(Long.toString(uuid));
     	if (fragment == null) {
@@ -257,6 +257,7 @@ public class ConnectionActivity extends Activity implements DirectoryListener, F
     		transaction.addToBackStack(null);
     		transaction.commit();
     	} else {
+            if (MainActivity.isDebuggable) Log.i(TAG, "Found the fragment with tag: " + Long.toString(uuid));
     		fragment.processResponse(files, directories);
     	}
     }
@@ -293,6 +294,8 @@ public class ConnectionActivity extends Activity implements DirectoryListener, F
     
     
     static class IncomingHandler extends Handler {
+        public final String TAG = "ConnectionActivity";
+
     	private final WeakReference<ConnectionActivity> mActivity;
     	
     	IncomingHandler(ConnectionActivity activity) {
@@ -304,13 +307,16 @@ public class ConnectionActivity extends Activity implements DirectoryListener, F
         	ConnectionActivity activity = mActivity.get();
             switch (msg.what) {
                 case ConnectionService.MSG_COMMAND_RETURN:
+                    if (MainActivity.isDebuggable) Log.i(TAG, "Command returned to Activity");
                 	Bundle cmdBundle = msg.getData();
                 	String response = cmdBundle.getString("response");
                 	if (response == null) {
+                        if (MainActivity.isDebuggable) Log.i(TAG, "Opening a directory");
                 		ArrayList<String> files = cmdBundle.getStringArrayList("files");
                 		ArrayList<String> directories = cmdBundle.getStringArrayList("directories");
                 		activity.handleResponse(cmdBundle.getLong("uuid"), files, directories);
                 	} else {
+                        if (MainActivity.isDebuggable) Log.i(TAG, "Opening a file");
                 		activity.handleResponse(cmdBundle.getLong("uuid"), cmdBundle.getInt("command"), cmdBundle.getString("parameter"), response);
                 	}
                 default:

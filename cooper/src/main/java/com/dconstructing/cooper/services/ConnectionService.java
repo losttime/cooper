@@ -199,6 +199,7 @@ public class ConnectionService extends Service {
     		mConnections.put(uuid, connection);
     		sendCommand(uuid, CMD_DIR_READ, connection.path, null, reply);
     	} else if (command == CMD_CHANGE_LOCATION) {
+            if (MainActivity.isDebuggable) Log.i(TAG, "Updating understanding of path to: " + parameter);
 			Connection connection = mConnections.get(uuid);
 			connection.updatePath(parameter);
 			sendCommand(uuid, CMD_DIR_READ, connection.path, null, reply);
@@ -340,14 +341,18 @@ public class ConnectionService extends Service {
 					}
 					
 					if (tCommand == CMD_WHERE_AM_I) {
+                        if (MainActivity.isDebuggable) Log.i(TAG, "Where am I?");
 						String pwd = channel.pwd();
 						response = channel.pwd();
 					} else if (tCommand == CMD_CHANGE_LOCATION) {
+                        if (MainActivity.isDebuggable) Log.i(TAG, "Changing directory: " + tParameter);
 						channel.cd(tParameter);
 					} else if (tCommand == CMD_DIR_READ) {
+                        if (MainActivity.isDebuggable) Log.i(TAG, "Reading directory: " + tParameter);
 						Vector<ChannelSftp.LsEntry> list = channel.ls(tParameter);
 						response = list;
 					} else if (tCommand == CMD_FILE_READ) {
+                        if (MainActivity.isDebuggable) Log.i(TAG, "Reading file: " + tParameter);
 						InputStream inputStream = channel.get(tParameter);
 						BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
 
@@ -361,11 +366,14 @@ public class ConnectionService extends Service {
 					    inputStream.close();
 						response = stringBuilder.toString();
 					} else if (tCommand == CMD_FILE_WRITE) {
+                        if (MainActivity.isDebuggable) Log.i(TAG, "Writing file: " + tParameter);
 						OutputStream outputStream = channel.put(tParameter);
 						outputStream.write(tContent.getBytes());
 						outputStream.close();
 						response = tContent;
-					}
+					} else {
+                        if (MainActivity.isDebuggable) Log.e(TAG, "Command does not match anything");
+                    }
 					commandResponse(tUuid, tCommand, tParameter, response, tReply);
 				} catch (SftpException e) {
 					e.printStackTrace();

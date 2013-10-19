@@ -56,6 +56,7 @@ public class ConnectedDirectoryFragment extends ListFragment {
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
+        if (MainActivity.isDebuggable) Log.i(TAG, "onCreate");
 		super.onCreate(savedInstanceState);
 		Bundle arguments = getArguments();
 		if (arguments != null) {
@@ -73,6 +74,7 @@ public class ConnectedDirectoryFragment extends ListFragment {
 
 	@Override
 	public void onActivityCreated(Bundle savedInstanceState) {
+        if (MainActivity.isDebuggable) Log.i(TAG, "onActivityCreated");
 		super.onActivityCreated(savedInstanceState);
 		
 		if (savedInstanceState == null) {
@@ -113,22 +115,22 @@ public class ConnectedDirectoryFragment extends ListFragment {
 	
 	
 	public void processResponse(ArrayList<String> files, ArrayList<String> directories) {
+        if (MainActivity.isDebuggable) Log.i(TAG, "Processing new directory");
+
 		ArrayAdapter<FilePath> adapter = (ArrayAdapter<FilePath>)getListAdapter();
 		adapter.setNotifyOnChange(false);
 		adapter.clear();
 		
-		//String[] lines = response.split(System.getProperty("line.separator"));
-		//adapter.add("..");
-		//for(String line : lines) {
-		//	adapter.add(line);
-		//}
 		for (String directory : directories) {
+            if (MainActivity.isDebuggable) Log.i(TAG, "Adding " + directory + " to directory");
 			adapter.add(new FilePath(directory, true));
 		}
 		for (String file : files) {
+            if (MainActivity.isDebuggable) Log.i(TAG, "Adding " + file + " to directory");
 			adapter.add(new FilePath(file, false));
 		}
 
+        if (MainActivity.isDebuggable) Log.i(TAG, "Directory contents processed");
 		adapter.notifyDataSetChanged();
 	}
 	
