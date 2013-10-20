@@ -19,3 +19,22 @@ local.properties
 .classpath
 .project
 .settings/
+
+# Android Studio
+.idea/
+.gradle
+/*/local.properties
+/*/out
+/*/*/build
+/*/*/production
+*.iml
+*.iws
+*.ipr
+*~
+*.swp
+
+# Mac
+.DS_Store
+
+#files
+*.png
