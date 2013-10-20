@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+This file is part of Cooper, a touch-friendly SSH client for Android devices
+Copyright (C) 2013  David Cox <losttime.shuffle@gmail.com>
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-->
+<resources>
+
+    <string name="app_name">Cooper</string>
+    <string name="hello_world"></string>
+
+    <string name="add_connection">New Connection</string>
+    <string name="discard">Discard</string>
+
+    <string name="address_hint">e.g. example.com</string>
+    <string name="username_hint">e.g. johndoe</string>
+    <string name="password_hint">password</string>
+    <string name="password_desc">Password will be asked for at login.</string>
+
+    <string name="empty_file_hint">File Content</string>
+
+    <string name="login_button">Login</string>
+    <string name="cancel_button">Cancel</string>
+
+    <string name="indicator_description">Connection Indicator</string>
+    <string name="disconnect">Disconnect</string>
+
+</resources>
